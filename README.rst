@@ -18,6 +18,8 @@ motion_correction
 
 Motion correction algorithms for FLIM data.
 
+Please use autopep8 and flake8 vscode extensions.
+
 
 * Free software: MIT license
 * Documentation: https://motion-correction.readthedocs.io.
