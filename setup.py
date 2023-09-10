@@ -10,7 +10,7 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['numpy>=1.24', 'Pillow>=10.0.0']
+requirements = ['numpy>=1.24', 'Pillow>=10.0.0', 'numba>=0.57', 'numba-progress>=1.1.0']
 
 test_requirements = ['pytest>=3', ]
 
