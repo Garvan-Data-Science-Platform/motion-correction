@@ -5,6 +5,10 @@ import numpy as np
 import numpy.typing import NDArray
 
 
+def clip(x, x_min, x_max):
+    return min(x_max, max(x, x_min))
+
+
 def apply_transformation(original:NDArray, transform:NDArray):
  """Applies a transformation matrix to single channel flim array or intensity array
     Arguments:
@@ -19,8 +23,8 @@ def apply_transformation(original:NDArray, transform:NDArray):
     for f in range(final.shape[2]):  # frames
 
         for idx in np.ndindex(final.shape[:2]):
-            dest_idx = (idx[0] + int(transform[0, *idx, 0]),
-                        idx[1] + int(transform[1, *idx, 0]))
+            dest_idx = (clip(idx[0] + round(transform[0, *idx, f]), 0, final.shape[0]-1),
+                        clip(idx[1] + round(transform[1, *idx, f]), 0, final.shape[1]-1))
             final[*dest_idx, f] += original[*idx, 0]
 
     return final
