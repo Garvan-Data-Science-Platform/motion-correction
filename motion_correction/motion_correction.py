@@ -45,12 +45,14 @@ def calculate_correction(
         global_algorithm: Optional, Name of global correction algorithm to apply, valid options include XXX 
         global_params: Optional, A dictionary defining parameters to use with global correction algorithm
     Returns:
-        transform_matrix: Array of dimension (2, width, height, frames) defining the vertical and horizontal displacements to be applied to each pixel of each frame
+        transform_matrix: Array of dimension (2, width, height, frames) defining the combined local and global vertical and horizontal displacements to be applied to each pixel of each frame
+        local_transform_matrix: Array of dimension (2, width, height, frames) defining the local transformation
+        global_transform_matrix: Array of dimension (2, width, height, frames) defining the global transformation
     """
 
     NotImplemented
 
-    #return transform_matrix
+    #return transform_matrix, local_transform_matrix, global_transform_matrix
 
 
 def apply_correction_intensity(
