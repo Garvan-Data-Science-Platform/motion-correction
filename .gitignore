@@ -107,3 +107,6 @@ ENV/
 
 
 working.py
+*.pt3
+
+save_dir

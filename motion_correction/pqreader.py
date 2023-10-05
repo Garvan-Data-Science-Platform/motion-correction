@@ -1,4 +1,4 @@
-# This file is based on: https://github.com/Photon-HDF5/phconvert/blob/master/phconvert/pqreader.py
+#
 # phconvert - Reference library to read and save Photon-HDF5 files
 #
 # Copyright (C) 2014-2015 Antonino Ingargiola <tritemio@gmail.com>
@@ -34,13 +34,19 @@ can take advantage of numba, if installed, to significanly speed-up
 the processing.
 """
 
+from numba.typed import Dict
+from numba import types
+from numba import njit
 import os
 import struct
 import time
+import sparse
 from collections import OrderedDict
 import numpy as np
-from numba import njit
+from tifffile import imwrite
 
+import matplotlib.pyplot as plt
+from matplotlib import animation
 from numba_progress import ProgressBar
 
 has_numba = True
@@ -48,6 +54,10 @@ try:
     import numba
 except ImportError:
     has_numba = False
+
+# Make key type with two 32-bit integer items.
+key_type = types.UniTuple(types.int64, 5)
+val_type = types.int64
 
 # Constants used to decode the PQ file headers
 # Tag Types
@@ -1173,7 +1183,7 @@ def get_flim_data_frame_static(sync, tcspc, channel, special, header_variables, 
     ImgHdr_LineStop = header_variables[4]
     ImgHdr_Frame = header_variables[5]
 
-    if (ImgHdr_Ident == 9) or (ImgHdr_Ident == 3):
+    if (ImgHdr_Ident == 9) or (ImgHdr_Ident == 3):  # Identifiers the scanner hardware. (3: LSM, 9: FLIMBee)
         num_of_detectors = np.unique(channel).size - 1
         num_tcspc_channel = np.unique(tcspc).size
         num_pixel_X = ImgHdr_PixX
@@ -1186,11 +1196,10 @@ def get_flim_data_frame_static(sync, tcspc, channel, special, header_variables, 
 
         # Get Number of Frames
         FrameSyncVal = sync[np.where(special == FrameMarker)]
-        num_of_Frames = FrameSyncVal.size
-        read_data_range = np.where(sync == FrameSyncVal[num_of_Frames - 1])[0][0]
+        num_of_frames = FrameSyncVal.size
+        read_data_range = np.where(sync == FrameSyncVal[num_of_frames - 1])[0][0]
 
-        flim_data_stack = np.zeros((num_pixel_Y, num_pixel_X, num_of_detectors, num_of_Frames, num_tcspc_channel),
-                                   dtype=np.uint16)
+        flim_data_stack = np.zeros((num_pixel_Y, num_pixel_X, num_of_detectors, num_of_frames), dtype=np.int64)
 
         L1 = sync[np.where(special == LineStartMarker)]  # Get Line start marker sync values
         L2 = sync[np.where(special == LineStopMarker)]  # Get Line start marker sync values
@@ -1202,8 +1211,102 @@ def get_flim_data_frame_static(sync, tcspc, channel, special, header_variables, 
         syncStart = 0
         countFrame = 0
         insideLine = False
-        insideFrame = num_of_Frames >= 1
+        counts = 0
 
+        # when only zero/one frame marker is present in TTTR file
+        insideFrame = num_of_frames >= 1
+
+        for event in range(read_data_range + 1):
+            progress_proxy.update(1)
+
+            currentSync = sync[event]
+            special_event = special[event]
+
+            # is the record a valid photon event or a special marker type event
+            if special[event] == 0:
+                isPhoton = True
+            else:
+                isPhoton = False
+
+            if not isPhoton:
+                # This is not needed once inside the first Frame marker
+                if special_event == FrameMarker:
+                    insideFrame = True
+                    currentLine = 0
+                    counts += 1
+                    countFrame += 1
+
+                if special_event == LineStartMarker:
+                    insideLine = True
+                    syncStart = currentSync
+
+                elif special_event == LineStopMarker:
+                    insideLine = False
+                    currentLine += 1
+                    syncStart = 0
+
+                    if (currentLine >= num_pixel_Y):
+                        insideFrame = False
+                        currentLine = 0
+
+            # Build FLIM image data stack here for N-spectral/tcspc-input channels
+            if isPhoton and insideFrame and insideLine:
+                currentPixel = int(np.floor((((currentSync - syncStart) / syncPulsesPerLine) * num_pixel_X)))
+                tmpchan = channel[event]
+                tmptcspc = tcspc[event]
+                if (currentPixel < num_pixel_X) and (tmptcspc < num_tcspc_channel):
+                    flim_data_stack[currentLine][currentPixel][tmpchan - 1][countFrame] += 1
+
+    return flim_data_stack
+
+
+@njit
+def get_flim_data_raw_static(sync, tcspc, channel, special, header_variables, progress_proxy):
+    ImgHdr_Ident = header_variables[0]
+    ImgHdr_PixX = header_variables[1]
+    ImgHdr_PixY = header_variables[2]
+    ImgHdr_LineStart = header_variables[3]
+    ImgHdr_LineStop = header_variables[4]
+    ImgHdr_Frame = header_variables[5]
+
+    if (ImgHdr_Ident == 9) or (ImgHdr_Ident == 3):  # Identifiers the scanner hardware. (3: LSM, 9: FLIMBee)
+        num_of_detectors = np.unique(channel).size - 1
+        num_tcspc_channel = np.unique(tcspc).size
+        num_pixel_X = ImgHdr_PixX
+        num_pixel_Y = ImgHdr_PixY
+
+        # Markers necessary to make FLIM image stack
+        LineStartMarker = 2 ** (ImgHdr_LineStart - 1)
+        LineStopMarker = 2 ** (ImgHdr_LineStop - 1)
+        FrameMarker = 2 ** (ImgHdr_Frame - 1)
+
+        # Get Number of Frames
+        FrameSyncVal = sync[np.where(special == FrameMarker)]
+        num_of_frames = FrameSyncVal.size
+        read_data_range = np.where(sync == FrameSyncVal[num_of_frames - 1])[0][0]
+
+        tkd = Dict.empty(
+            key_type=key_type,
+            value_type=val_type)
+
+        shape = (num_pixel_Y, num_pixel_X, num_of_detectors, num_of_frames, num_tcspc_channel)
+        reserved_size = int(read_data_range)
+        data = np.zeros((6, reserved_size), dtype=np.int64)
+
+        L1 = sync[np.where(special == LineStartMarker)]  # Get Line start marker sync values
+        L2 = sync[np.where(special == LineStopMarker)]  # Get Line start marker sync values
+
+        syncPulsesPerLine = np.floor(np.mean(L2[10:] - L1[10:]))
+
+        # Initialize Variable
+        currentLine = 0
+        syncStart = 0
+        countFrame = 0
+        insideLine = False
+
+        # when only zero/one frame marker is present in TTTR file
+        insideFrame = num_of_frames >= 1
+        unique_idx = 0
         for event in range(read_data_range + 1):
             progress_proxy.update(1)
 
@@ -1224,12 +1327,10 @@ def get_flim_data_frame_static(sync, tcspc, channel, special, header_variables, 
                     currentLine = 0
 
                 if special_event == LineStartMarker:
-
                     insideLine = True
                     syncStart = currentSync
 
                 elif special_event == LineStopMarker:
-
                     insideLine = False
                     currentLine += 1
                     syncStart = 0
@@ -1239,19 +1340,21 @@ def get_flim_data_frame_static(sync, tcspc, channel, special, header_variables, 
                         currentLine = 0
 
             # Build FLIM image data stack here for N-spectral/tcspc-input channels
-
             if isPhoton and insideLine and insideFrame:
                 currentPixel = int(np.floor((((currentSync - syncStart) / syncPulsesPerLine) * num_pixel_X)))
                 tmpchan = channel[event]
-                tmptcspc = tcspc[event]
-
+                tmptcspc = np.int64(tcspc[event])
                 if (currentPixel < num_pixel_X) and (tmptcspc < num_tcspc_channel):
-                    flim_data_stack[currentLine][currentPixel][tmpchan-1][countFrame][tmptcspc] += 1
+                    if (currentLine, currentPixel, tmpchan - 1, countFrame, tmptcspc) in tkd:
+                        data[5, tkd[(currentLine, currentPixel, tmpchan - 1, countFrame, tmptcspc)]] += 1
+                    else:
+                        data[:, unique_idx] = (currentLine, currentPixel, tmpchan - 1, countFrame, tmptcspc, 1)
+                        tkd[(currentLine, currentPixel, tmpchan - 1, countFrame, tmptcspc)] = unique_idx
+                        unique_idx += 1
+    return data[:, :unique_idx], shape
 
-    return flim_data_stack
 
-
-def get_ptu_data_frame(sync, tcspc, chan, meta):
+def get_ptu_data_frame(sync, tcspc, chan, meta, is_raw=False):
     # Check if it's FLIM image
     if meta['tags']["Measurement_SubMode"] == 0:
         raise IOError("This is not a FLIM PTU file.!!! \n")
@@ -1278,15 +1381,18 @@ def get_ptu_data_frame(sync, tcspc, chan, meta):
          meta['tags']["ImgHdr_PixY"]['value'], meta['tags']["ImgHdr_LineStart"]['value'],
          meta['tags']["ImgHdr_LineStop"]['value'], meta['tags']["ImgHdr_Frame"]['value']], dtype=np.uint64)
 
-    with ProgressBar(total=len(sync)) as progress:
-        flim_data_stack = get_flim_data_frame_static(sync, tcspc, chan, special, header_variables, progress)
+    if is_raw:
+        with ProgressBar(total=len(sync)) as progress:
+            flim_data_dict, shape = get_flim_data_raw_static(sync, tcspc, chan, special, header_variables, progress)
+        return (flim_data_dict, shape)
+    else:
+        with ProgressBar(total=len(sync)) as progress:
+            flim_data_stack = get_flim_data_frame_static(sync, tcspc, chan, special, header_variables, progress)
+        return flim_data_stack
 
-    return flim_data_stack
 
-
-def get_pt3_data_frame(sync, tcspc, chan, meta):
-
-    special = ((chan == 15) * 1) * (np.bitwise_and(tcspc, 15) * 1)   # special marker locations
+def get_pt3_data_frame(sync, tcspc, chan, meta, is_raw=False):
+    special = ((chan == 15) * 1) * (np.bitwise_and(tcspc, 15) * 1)  # special marker locations
     index = ((chan == 15) * 1) * ((np.bitwise_and(tcspc, 15) == 0) * 1)
 
     sync = sync + (65536 * np.cumsum(index))  # correct overflow
@@ -1300,14 +1406,37 @@ def get_pt3_data_frame(sync, tcspc, chan, meta):
         [meta['imghdr'][1], meta['imghdr'][6],
          meta['imghdr'][7], meta['imghdr'][3],
          meta['imghdr'][4], meta['imghdr'][2]], dtype=np.uint64)
+    if is_raw:
+        with ProgressBar(total=len(sync)) as progress:
+            flim_data_dict, shape = get_flim_data_raw_static(sync, tcspc, chan, special, header_variables, progress)
+        return (flim_data_dict, shape)
+    else:
+        with ProgressBar(total=len(sync)) as progress:
+            flim_data_stack = get_flim_data_frame_static(sync, tcspc, chan, special, header_variables, progress)
+        return flim_data_stack
 
-    with ProgressBar(total=len(sync)) as progress:
-        flim_data_stack = get_flim_data_frame_static(sync, tcspc, chan, special, header_variables, progress)
 
-    return flim_data_stack
+def plot_sequence_images(image_array):
+    ''' Display images sequence as an animation in jupyter notebook
+
+    Args:
+        image_array(numpy.ndarray): image_array.shape equal to (num_images, height, width, num_channels)
+    '''
+    fig = plt.figure()
+    ax = plt.gca()
+
+    draw_image = ax.imshow(image_array[0], animated=True)
+
+    def animate(i):
+        art = image_array[i]
+        draw_image.set_array(art)
+        return (draw_image,)
+
+    anim = animation.FuncAnimation(fig, animate, frames=len(image_array), interval=100)
+    plt.show()
 
 
-def load_ptfile(filename):
+def load_ptfile(filename, is_raw=False):
     '''
     :param filename:
     :return: flim_data_stack is of size (num_pixel_Y, num_pixel_X, channels, num_of_frames, num_tcspc_channel)
@@ -1315,15 +1444,10 @@ def load_ptfile(filename):
     name, ext = os.path.splitext(filename)
     if ext == ".ptu":
         sync, channel, tcspc, meta = load_ptu(filename)
-        flim_data_stack = get_ptu_data_frame(sync, tcspc, channel, meta)
+        flim_data = get_ptu_data_frame(sync, tcspc, channel, meta, is_raw)
     elif ext == ".pt3":
         sync, channel, tcspc, meta = load_pt3(filename)
-        flim_data_stack = get_pt3_data_frame(sync, tcspc, channel, meta)
+        flim_data = get_pt3_data_frame(sync, tcspc, channel, meta, is_raw)
     else:
         raise ValueError(f'format of {ext} is not supported!')
-    return flim_data_stack, meta
-
-
-if __name__ == "__main__":
-    flim_data_stack, meta = load_ptfile(
-        "/Users/lxfhfut/Dropbox/Garvan/Motion_Correction/New data/FLIM data/RhoA ms881 intenstine 1000Hz unidirectional.pt3")
+    return flim_data, meta
