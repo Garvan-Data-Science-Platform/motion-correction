@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/garvan/motion_correction
+    $ git clone git://github.com/Garvan-Data-Science-Platformmotion_correction
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl -OJL https://github.com/garvan/motion_correction/tarball/master
+    $ curl -OJL https://github.com/Garvan-Data-Science-Platformmotion_correction/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/garvan/motion_correction
-.. _tarball: https://github.com/garvan/motion_correction/tarball/master
+.. _Github repo: https://github.com/Garvan-Data-Science-Platformmotion_correction
+.. _tarball: https://github.com/Garvan-Data-Science-Platformmotion_correction/tarball/master

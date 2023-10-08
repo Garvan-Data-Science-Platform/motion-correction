@@ -15,7 +15,7 @@ Types of Contributions
 Report Bugs
 ~~~~~~~~~~~
 
-Report bugs at https://github.com/garvan/motion_correction/issues.
+Report bugs at https://github.com/Garvan-Data-Science-Platformmotion_correction/issues.
 
 If you are reporting a bug, please include:
 
@@ -45,7 +45,7 @@ articles, and such.
 Submit Feedback
 ~~~~~~~~~~~~~~~
 
-The best way to send feedback is to file an issue at https://github.com/garvan/motion_correction/issues.
+The best way to send feedback is to file an issue at https://github.com/Garvan-Data-Science-Platformmotion_correction/issues.
 
 If you are proposing a feature:
 
