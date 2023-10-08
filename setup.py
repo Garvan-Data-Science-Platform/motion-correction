@@ -26,12 +26,9 @@ requirements = [
     "tqdm>=4.66",
     "scikit-image>=0.21",
     "sparse>=0.14.0",
-    "numba_progress>=1.1.0"
+    "numba_progress>=1.1.0",
+    "cupy-cuda112"
 ]
-extras_require = {
-    'gpu': ["cupy-cuda112==10.6.0",
-            "git+https://github.com/dipy/cudipy.git"]
-}
 
 test_requirements = ['pytest>=3', ]
 

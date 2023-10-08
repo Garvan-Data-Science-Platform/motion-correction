@@ -128,8 +128,10 @@ def calculate_correction(
             intensity_data_stack_corrected[:, :, i], frame_transform_local = align_optical_tvl1(ref_frame, aligned)
         elif local_algorithm == "morphic":
             if torch.cuda.is_available():
+                print("USING GPU MORHPIC")
                 intensity_data_stack_corrected[:, :, i], frame_transform_local = align_morphic_gpu(ref_frame, aligned)
             else:
+                print("USING CPU MORPHIC")
                 intensity_data_stack_corrected[:, :, i], frame_transform_local = align_morphic_cpu(ref_frame, aligned)
         else:
             intensity_data_stack_corrected[:, :, i], frame_transform_local = aligned, np.zeros_like(tst_frame, dtype=np.float32)

@@ -14,6 +14,11 @@ from dipy.align.imwarp import SymmetricDiffeomorphicRegistration as morphic_cpu
 import torch.nn.functional as F
 np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
 
+if platform != "darwin":
+    import cupy as cp
+    from .cudipy.align.metrics import CCMetric as ccmetric_gpu
+    from .cudipy.align.imwarp import SymmetricDiffeomorphicRegistration as morphic_gpu
+
 device = "cpu"
 if torch.cuda.is_available():
     device = "cuda:0"
@@ -344,9 +349,9 @@ def align_morphic_gpu(fixed_img, moving_img, sigma_diff=20, radius=15):
     Note:
     This function performs image registration using the MORPHIC method on the GPU.
     """
-    from cudipy.align.imwarp import SymmetricDiffeomorphicRegistration as morphic_gpu
+    from .cudipy.align.imwarp import SymmetricDiffeomorphicRegistration as morphic_gpu
     import cupy as cp
-    from cudipy.align.metrics import CCMetric as ccmetric_gpu
+    from .cudipy.align.metrics import CCMetric as ccmetric_gpu
 
     metric = ccmetric_gpu(2, sigma_diff=sigma_diff, radius=radius)
     level_iters = [10, 10, 5]
