@@ -6,9 +6,6 @@ motion_correction
 .. image:: https://img.shields.io/pypi/v/motion_correction.svg
         :target: https://pypi.python.org/pypi/motion_correction
 
-.. image:: https://img.shields.io/travis/tkallady/motion_correction.svg
-        :target: https://travis-ci.com/tkallady/motion_correction
-
 .. image:: https://readthedocs.org/projects/motion-correction/badge/?version=latest
         :target: https://motion-correction.readthedocs.io/en/latest/?version=latest
         :alt: Documentation Status
@@ -18,9 +15,6 @@ motion_correction
 
 Motion correction algorithms for FLIM data.
 
-Please use autopep8 and flake8 vscode extensions.
-
-
 * Free software: MIT license
 * Documentation: https://motion-correction.readthedocs.io.
 
@@ -28,7 +22,8 @@ Please use autopep8 and flake8 vscode extensions.
 Features
 --------
 
-* TODO
+* Various algorithms to correct FLIM (.ptu and .pt3) files
+* Refer to `Tutorial.ipynb <https://github.com/Garvan-Data-Science-Platform/motion-correction/blob/main/desktop/Tutorial.ipynb>` for an example of the library in use
 
 Credits
 -------

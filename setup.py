@@ -56,7 +56,7 @@ setup(
     packages=find_packages(include=['motion_correction', 'motion_correction.*']),
     test_suite='tests',
     tests_require=test_requirements,
-    url='https://github.com/tkallady/motion_correction',
+    url='https://github.com/garvan/motion_correction',
     version='0.1.0',
     zip_safe=False,
 )

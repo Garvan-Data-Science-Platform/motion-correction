@@ -77,7 +77,7 @@ cuDIPY uses other libraries also licensed under the BSD or the MIT licenses.
 """
 
 # versions for dependencies
-# Check these versions against .travis.yml and requirements.txt
+# Check these versions against and requirements.txt
 CUPY_MIN_VERSION = '7.8.0'
 NIBABEL_MIN_VERSION = '3.0.0'
 NUMPY_MIN_VERSION = '1.12.0'
@@ -85,29 +85,29 @@ SCIPY_MIN_VERSION = '1.0'
 DIPY_MIN_VERSION = '1.2.0'
 
 # Main setup parameters
-NAME                = 'cudipy'
-MAINTAINER          = "Gregory R. Lee"
-MAINTAINER_EMAIL    = "neuroimaging@python.org"
-DESCRIPTION         = description
-LONG_DESCRIPTION    = long_description
-URL                 = "http://dipy.org"
-DOWNLOAD_URL        = "http://github.com/dipy/cudipy/archives/master"
-LICENSE             = "BSD license"
-CLASSIFIERS         = CLASSIFIERS
-AUTHOR              = "cuDIPY developers"
-AUTHOR_EMAIL        = "neuroimaging@python.org"
-PLATFORMS           = "OS Independent"
-MAJOR               = _version_major
-MINOR               = _version_minor
-MICRO               = _version_micro
-ISRELEASE           = _version_extra == ''
-VERSION             = __version__
-PROVIDES            = ["cudipy"]
-REQUIRES            = ["cupy (>=%s)" % CUPY_MIN_VERSION,
-                       "dipy (>=%s)" % DIPY_MIN_VERSION,
-                       "nibabel (>=%s)" % NIBABEL_MIN_VERSION,
-                       "numpy (>=%s)" % NUMPY_MIN_VERSION,
-                       "scipy (>=%s)" % SCIPY_MIN_VERSION]
+NAME = 'cudipy'
+MAINTAINER = "Gregory R. Lee"
+MAINTAINER_EMAIL = "neuroimaging@python.org"
+DESCRIPTION = description
+LONG_DESCRIPTION = long_description
+URL = "http://dipy.org"
+DOWNLOAD_URL = "http://github.com/dipy/cudipy/archives/master"
+LICENSE = "BSD license"
+CLASSIFIERS = CLASSIFIERS
+AUTHOR = "cuDIPY developers"
+AUTHOR_EMAIL = "neuroimaging@python.org"
+PLATFORMS = "OS Independent"
+MAJOR = _version_major
+MINOR = _version_minor
+MICRO = _version_micro
+ISRELEASE = _version_extra == ''
+VERSION = __version__
+PROVIDES = ["cudipy"]
+REQUIRES = ["cupy (>=%s)" % CUPY_MIN_VERSION,
+            "dipy (>=%s)" % DIPY_MIN_VERSION,
+            "nibabel (>=%s)" % NIBABEL_MIN_VERSION,
+            "numpy (>=%s)" % NUMPY_MIN_VERSION,
+            "scipy (>=%s)" % SCIPY_MIN_VERSION]
 EXTRAS_REQUIRE = {
     "test": [
         "pytest",

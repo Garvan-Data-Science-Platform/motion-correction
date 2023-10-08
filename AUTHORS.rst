@@ -2,10 +2,11 @@
 Credits
 =======
 
-Development Lead
+Developers
 ----------------
 
 * Timothy Kallady <t.kallady@garvan.org.au>
+* Gavin Lin <x.lin@garvan.org.au>
 
 Contributors
 ------------
