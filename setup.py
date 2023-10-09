@@ -27,7 +27,7 @@ requirements = [
     "scikit-image>=0.21",
     "sparse>=0.14.0",
     "numba_progress>=1.1.0",
-    "cupy-cuda112"
+    "cupy-cuda112",
 ]
 
 test_requirements = ['pytest>=3', ]

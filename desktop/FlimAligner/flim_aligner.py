@@ -131,7 +131,8 @@ class FlimAligner:
             self.flim_dict = data[0]
             self.shape = data[1]
         else:
-            self.flim_frames = data[:, :, self.channel, :].astype(np.uint8)
+            self.flim_frames = data[:, :, self.channel, :].sum(axis=-1).astype(np.int64)
+            del data
             self.shape = self.flim_frames.shape
 
     def apply_correction_intensity(self, ptfile, ref_frame_idx=0):

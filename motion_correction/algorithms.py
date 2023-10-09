@@ -14,14 +14,11 @@ from dipy.align.imwarp import SymmetricDiffeomorphicRegistration as morphic_cpu
 import torch.nn.functional as F
 np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
 
-if platform != "darwin":
-    import cupy as cp
-    from .cudipy.align.metrics import CCMetric as ccmetric_gpu
-    from .cudipy.align.imwarp import SymmetricDiffeomorphicRegistration as morphic_gpu
-
 device = "cpu"
 if torch.cuda.is_available():
     device = "cuda:0"
+else:
+    print("No GPU detected, or CUDA toolkit not installed. https://developer.nvidia.com/cuda-downloads")
 
 
 @njit

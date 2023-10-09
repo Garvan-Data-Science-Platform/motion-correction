@@ -1199,7 +1199,7 @@ def get_flim_data_frame_static(sync, tcspc, channel, special, header_variables, 
         num_of_frames = FrameSyncVal.size
         read_data_range = np.where(sync == FrameSyncVal[num_of_frames - 1])[0][0]
 
-        flim_data_stack = np.zeros((num_pixel_Y, num_pixel_X, num_of_detectors, num_of_frames), dtype=np.int64)
+        flim_data_stack = np.zeros((num_pixel_Y, num_pixel_X, num_of_detectors, num_of_frames, num_tcspc_channel), dtype=np.uint8)
 
         L1 = sync[np.where(special == LineStartMarker)]  # Get Line start marker sync values
         L2 = sync[np.where(special == LineStopMarker)]  # Get Line start marker sync values
@@ -1255,7 +1255,7 @@ def get_flim_data_frame_static(sync, tcspc, channel, special, header_variables, 
                 tmpchan = channel[event]
                 tmptcspc = tcspc[event]
                 if (currentPixel < num_pixel_X) and (tmptcspc < num_tcspc_channel):
-                    flim_data_stack[currentLine][currentPixel][tmpchan - 1][countFrame] += 1
+                    flim_data_stack[currentLine][currentPixel][tmpchan - 1][countFrame][tmptcspc] += 1
 
     return flim_data_stack
 
@@ -1413,6 +1413,7 @@ def get_pt3_data_frame(sync, tcspc, chan, meta, is_raw=False):
     else:
         with ProgressBar(total=len(sync)) as progress:
             flim_data_stack = get_flim_data_frame_static(sync, tcspc, chan, special, header_variables, progress)
+        print(flim_data_stack.shape)
         return flim_data_stack
 
 
