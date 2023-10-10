@@ -1,6 +1,14 @@
 motion\_correction package
 ==========================
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   motion_correction.desktop
+
 Submodules
 ----------
 

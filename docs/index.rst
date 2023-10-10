@@ -1,8 +1,6 @@
 FLIM Motion Correction
 ======================================
 
-.. highlight:: shell
-
 Features
 --------
 
@@ -12,6 +10,8 @@ Installation
 ------------
 
 To install motion_correction, run this command in your terminal:
+
+.. highlight:: shell
 
 .. code-block:: console
 
@@ -30,7 +30,12 @@ GPU Support
 
 Some algorithms run faster with a GPU. 
 `CUDA Toolkit <https://developer.nvidia.com/cuda-downloads>`_ must be installed to run on GPU.
-Alternatively if using conda, `conda install -c nvidia cuda-toolkit`
+
+.. code-block:: console
+
+    $ conda install -c nvidia cuda-toolkit`
+
+.. highlight:: python
 
 Usage
 -----
