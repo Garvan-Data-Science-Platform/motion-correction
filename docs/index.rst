@@ -40,7 +40,9 @@ Some algorithms run faster with a GPU.
 Usage
 -----
 
-To use motion_correction in a project::
+Refer to this this `tutorial notebook <https://github.com/Garvan-Data-Science-Platform/motion-correction/blob/main/examples/Tutorial.ipynb>`_ for correcting FLIM images in a desktop environment.
+
+To use motion_correction in a script::
 
     from motion_correction import load_ptfile, write_pt3, get_intensity_stack, apply_correction_flim, calculate_correction
 
