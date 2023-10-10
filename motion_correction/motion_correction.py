@@ -45,11 +45,11 @@ def get_intensity_stack(
     channel: int
 ) -> NDArray[np.uint8]:
     """Converts a FLIM data stack (output of pqreader) to a stack of intensity frames for a single channel
-    Arguments:
-        flim_data_stack: A numpy array defining the FLIM data stack to be corrected (loaded from pqreader module).
-        channel: Channel to use for intensity
-    Returns:
-        intensity_stack: Array of dimension (width,height,n_frames)
+
+    :param flim_data_stack: A numpy array defining the FLIM data stack to be corrected (loaded from pqreader module).
+    :param channel: Channel to use for intensity
+    :return intensity_stack: Array of dimension (width,height,n_frames)
+
     """
 
     intensity_stack = flim_data_stack[:, :, channel, :, :].sum(axis=-1)
@@ -66,28 +66,29 @@ def calculate_correction(
         global_params: dict | None = None,
 ) -> CorrectionResults:
     """Calculates motion correction for given intensity data stack based on chosen algorithms
-    Arguments:
-        intensity_data_stack: A numpy array defining the intensity frames to use for correction (output of get_intensity_stack)
-        reference_frame: The reference frame to use for 
-        local_algorithm: Optional, Name of local correction algorithm to apply, valid options include 'morphic', 'optical_tvl1', 'optical_poly', 'optical_ilk'
-        local_params: Optional, A dictionary defining parameters to apply to the local algorithm, refer to docs
-        global_algorithm: Optional, Name of global correction algorithm to apply, valid options include 'phase'
-        global_params: Optional, A dictionary defining parameters to use with global correction algorithm
-    Returns:
-        correction_results: dict with following fields:
-        - global_corrected_intensity_data_stack: original intensity data stack with global corrections applied
-        - corrected_intensity_data_stack: original intensity data stack with : original intensity data stack with global and local corrections applied
-        - metrics: dict with fields for each metric (ncc, mse, nrm, ssi), with each entry looking like
-            - {...
+
+    :param intensity_data_stack: A numpy array defining the intensity frames to use for correction (output of get_intensity_stack)
+    :param reference_frame: The reference frame to use
+    :param local_algorithm: Optional, Name of local correction algorithm to apply, valid options include 'morphic', 'optical_tvl1', 'optical_poly', 'optical_ilk'
+    :param local_params: Optional, A dictionary defining parameters to apply to the local algorithm, refer to docs
+    :param global_algorithm: Optional, Name of global correction algorithm to apply, valid options include 'phase'
+    :param global_params: Optional, A dictionary defining parameters to use with global correction algorithm
+
+    :return CorrectionResults: dictionar with keys:
+            - **global_corrected_intensity_data_stack**: original intensity data stack with global corrections applied
+            - **corrected_intensity_data_stack**: original intensity data stack with : original intensity data stack with global and local corrections applied
+            - **metrics**: dict with fields for each metric (ncc, mse, nrm, ssi), with each entry looking like
+                - {...
                 'ncc': {
                         'original': numpy array of length num_frames, metric values for original frames
                         'global_corrected' : numpy array of length num_frames, metric values for globally corrected frames
                         'corrected: numpy array of length num_frames, metric values for corrected frames
                 }, ...
                }
-        - combined_transforms: Array of dimension (2, width, height, frames) defining the combined local and global vertical and horizontal displacements to be applied to each pixel of each frame
-        - local_transforms: Array of dimension (2, width, height, frames) defining the local transformation
-        - global_transforms: Array of dimension (2, width, height, frames) defining the global transformation
+        - **combined_transforms**: Array of dimension (2, width, height, frames) defining the combined local and global vertical and horizontal displacements to be applied to each pixel of each frame
+        - **local_transforms**: Array of dimension (2, width, height, frames) defining the local transformation
+        - **global_transforms**: Array of dimension (2, width, height, frames) defining the global transformation
+
     """
     assert 0 <= reference_frame < intensity_data_stack.shape[2]
     local_transforms = np.zeros((2, *intensity_data_stack.shape), dtype=np.float32)
@@ -134,9 +135,9 @@ def calculate_correction(
         else:
             intensity_data_stack_corrected[:, :, i], frame_transform_local = aligned, np.zeros_like(tst_frame, dtype=np.float32)
 
-        metrics['ncc']['original'][i] = ncc(ref_frame, intensity_data_stack[:, :, i])
-        metrics['ncc']['corrected'][i] = ncc(ref_frame, intensity_data_stack_corrected[:, :, i])
-        metrics['ncc']['global_corrected'][i] = ncc(ref_frame, intensity_data_stack_global_corrected[:, :, i])
+        metrics['ncc']['original'][i] = _ncc(ref_frame, intensity_data_stack[:, :, i])
+        metrics['ncc']['corrected'][i] = _ncc(ref_frame, intensity_data_stack_corrected[:, :, i])
+        metrics['ncc']['global_corrected'][i] = _ncc(ref_frame, intensity_data_stack_global_corrected[:, :, i])
 
         metrics['mse']['original'][i] = skm.mean_squared_error(ref_frame, intensity_data_stack[:, :, i])
         metrics['mse']['corrected'][i] = skm.mean_squared_error(ref_frame, intensity_data_stack_corrected[:, :, i])
@@ -175,13 +176,13 @@ def apply_correction_flim(
     delete: bool = False
 ):
     """Applies a transformation matrix to a flim data stack
-    Arguments:
-        flim_data_stack: A numpy array defining the FLIM data stack to be corrected (loaded from pqreader module).
-        transform_matrix: Array of dimension (2, width, height, frames) defining the x and y displacements to be applied to each pixel of each frame
-        exclude: Optional, list of frames to exclude from final output
-        delete: Optional, delete input data stack to save memory
-    Returns:
-        corrected_flim_data_stack: A numpy array of same shape as flim_data_stack
+
+    :param flim_data_stack: A numpy array defining the FLIM data stack to be corrected (loaded from pqreader module).
+    :param transform_matrix: Array of dimension (2, width, height, frames) defining the x and y displacements to be applied to each pixel of each frame
+    :param exclude: Optional, list of frames to exclude from final output
+    :param delete: Optional, delete input data stack to save memory
+    :return corrected_flim_data_stack: A numpy array of same shape as flim_data_stack
+
     """
 
     # flim_data_dict, shape = flim_data_stack
@@ -216,11 +217,11 @@ def get_aggregated_intensity_image(
     channel: int,
 ) -> NDArray[np.uint8]:
     """Converts an intensity stack to a single intensity image representing the sum of all frames in the stack
-    Arguments:
-        intensity_data_stack: A numpy array defining the intensity frames
-        channel: Channel to use
-    Returns:
-        intensity_frame: A single frame, shape (width,height)
+
+    :param intensity_data_stack: A numpy array defining the intensity frames
+    :param channel: Channel to use
+    :return intensity_frame: A single frame, shape (width,height)
+
     """
 
     intensity_frame = flim_data_stack[:, :, channel, :, :].sum(axis=(2, 3))
@@ -228,11 +229,11 @@ def get_aggregated_intensity_image(
     return intensity_frame
 
 
-def clip(x, x_min, x_max):
+def _clip(x, x_min, x_max):
     return min(x_max, max(x, x_min))
 
 
-def ncc(patch1, patch2):
+def _ncc(patch1, patch2):
     product = np.mean((patch1 - patch1.mean()) * (patch2 - patch2.mean()))
     stds = patch1.std() * patch2.std()
     if stds == 0:

@@ -7,31 +7,6 @@
 This module contains functions to load and decode files from PicoQuant
 hardware.
 
-The main functions to decode PicoQuant files (PTU, HT3, PT3, T3R) are respectively:
-
-- :func:`load_ptu`
-- :func:`load_ht3`
-- :func:`load_pt3`
-- :func:`load_t3r`
-
-These functions return the arrays timestamps (also called macro-time or timetag),
-detectors (or channel), nanotimes (also called micro-time or TCSPC time) and an
-additional metadata dict.
-
-Other lower level functions are:
-
-- :func:`ptu_reader` to load metadata and raw t3 records from PTU files
-- :func:`ht3_reader` to load metadata and raw t3 records from HT3 files
-- :func:`pt3_reader` to load metadata and raw t3 records from PT3 files
-- :func:`process_t3records` to decode the t3 records and return
-  timestamps (after overflow correction), detectors and TCSPC nanotimes.
-- :func:`process_t3records_t3rfile` to decode the t3 records for t3r files.
-- :func:`process_t2records` to decode the t2 records and return
-  timestamps (after overflow correction) and detectors.
-
-The functions performing overflow/rollover correction
-can take advantage of numba, if installed, to significanly speed-up
-the processing.
 """
 
 from numba.typed import Dict
@@ -94,7 +69,7 @@ _ptu_tag_type_r = {v: k for k, v in _ptu_tag_type.items()}
 _ptu_rec_type_r = {v: k for k, v in _ptu_rec_type.items()}
 
 
-def load_ptu(filename, ovcfunc=None):
+def _load_ptu(filename, ovcfunc=None):
     """Load data from a PicoQuant .ptu file.
 
     Arguments:
@@ -116,26 +91,26 @@ def load_ptu(filename, ovcfunc=None):
     """
     assert os.path.isfile(filename), "File '%s' not found." % filename
 
-    t3records, record_type, tags = ptu_reader(filename)
+    t3records, record_type, tags = _ptu_reader(filename)
 
     if record_type == 'rtPicoHarpT3':
-        detectors, timestamps, nanotimes = process_t3records(
+        detectors, timestamps, nanotimes = _process_t3records(
             t3records, time_bit=16, dtime_bit=12, ch_bit=4, special_bit=False,
             ovcfunc=ovcfunc)
 
     elif record_type == 'rtHydraHarpT3':
-        detectors, timestamps, nanotimes = process_t3records(
+        detectors, timestamps, nanotimes = _process_t3records(
             t3records, time_bit=10, dtime_bit=15, ch_bit=6, special_bit=True,
             ovcfunc=ovcfunc)
     elif record_type in ('rtHydraHarp2T3', 'rtTimeHarp260NT3',
                          'rtTimeHarp260PT3'):
-        detectors, timestamps, nanotimes = process_t3records(
+        detectors, timestamps, nanotimes = _process_t3records(
             t3records, time_bit=10, dtime_bit=15, ch_bit=6, special_bit=True,
             ovcfunc=_correct_overflow_nsync)
     elif record_type in ('rtHydraHarp2T2', 'rtTimeHarp260NT2', 'rtTimeHarp260PT2'):
-        detectors, timestamps = process_t2records(t3records,
-                                                  time_bit=25, ch_bit=6, special_bit=True,
-                                                  ovcfunc=_correct_overflow_nsync)
+        detectors, timestamps = _process_t2records(t3records,
+                                                   time_bit=25, ch_bit=6, special_bit=True,
+                                                   ovcfunc=_correct_overflow_nsync)
         nanotimes = None
     else:
         msg = ('Sorry, decoding "%s" record type is not implemented!' %
@@ -169,7 +144,7 @@ def load_ptu(filename, ovcfunc=None):
     return timestamps, detectors, nanotimes, meta
 
 
-def load_phu(filename):
+def _load_phu(filename):
     """Load data from a PicoQuant .phu file.
 
     Arguments:
@@ -184,14 +159,14 @@ def load_phu(filename):
         table.
     """
     assert os.path.isfile(filename), "File '%s' not found." % filename
-    histograms, histo_resolution, tags = phu_reader(filename)
+    histograms, histo_resolution, tags = _phu_reader(filename)
     acquisition_duration = tags['MeasDesc_AcquisitionTime']['value']
     acquisition_duration *= 1e-3  # in seconds
     meta = {'acquisition_duration': acquisition_duration, 'tags': tags}
     return histograms, histo_resolution, meta
 
 
-def load_ht3(filename, ovcfunc=None):
+def _load_ht3(filename, ovcfunc=None):
     """Load data from a PicoQuant .ht3 file.
 
     Arguments:
@@ -207,8 +182,8 @@ def load_ht3(filename, ovcfunc=None):
     """
     assert os.path.isfile(filename), "File '%s' not found." % filename
 
-    t3records, timestamps_unit, nanotimes_unit, meta = ht3_reader(filename)
-    detectors, timestamps, nanotimes = process_t3records(
+    t3records, timestamps_unit, nanotimes_unit, meta = _ht3_reader(filename)
+    detectors, timestamps, nanotimes = _process_t3records(
         t3records, time_bit=10, dtime_bit=15, ch_bit=6, special_bit=True,
         ovcfunc=ovcfunc)
     ctime_t = time.strptime(meta['header']['FileTime'][0].decode(),
@@ -226,7 +201,7 @@ def load_ht3(filename, ovcfunc=None):
     return timestamps, detectors, nanotimes, meta
 
 
-def load_pt3(filename, ovcfunc=None):
+def _load_pt3(filename, ovcfunc=None):
     """Load data from a PicoQuant .pt3 file.
 
     Arguments:
@@ -242,8 +217,8 @@ def load_pt3(filename, ovcfunc=None):
     """
     assert os.path.isfile(filename), "File '%s' not found." % filename
 
-    t3records, timestamps_unit, nanotimes_unit, meta = pt3_reader(filename)
-    detectors, timestamps, nanotimes = process_t3records(
+    t3records, timestamps_unit, nanotimes_unit, meta = _pt3_reader(filename)
+    detectors, timestamps, nanotimes = _process_t3records(
         t3records, time_bit=16, dtime_bit=12, ch_bit=4, special_bit=False,
         ovcfunc=ovcfunc)
     acquisition_duration = meta['header']['AcquisitionTime'][0] * 1e-3
@@ -262,7 +237,7 @@ def load_pt3(filename, ovcfunc=None):
     return timestamps, detectors, nanotimes, meta
 
 
-def load_t3r(filename, ovcfunc=None):
+def _load_t3r(filename, ovcfunc=None):
     """Load data from a PicoQuant .pt3 file.
 
     Arguments:
@@ -278,8 +253,8 @@ def load_t3r(filename, ovcfunc=None):
     """
     assert os.path.isfile(filename), "File '%s' not found." % filename
 
-    t3records, timestamps_unit, nanotimes_unit, meta = t3r_reader(filename)
-    detectors, timestamps, nanotimes = process_t3records_t3rfile(
+    t3records, timestamps_unit, nanotimes_unit, meta = _t3r_reader(filename)
+    detectors, timestamps, nanotimes = __process_t3records_t3rfile(
         t3records, reserved=1, valid=1, time_bit=12, dtime_bit=16,
         ch_bit=2, special_bit=False)
     meta.update({'timestamps_unit': timestamps_unit,
@@ -287,7 +262,7 @@ def load_t3r(filename, ovcfunc=None):
     return timestamps, detectors, nanotimes, meta
 
 
-def ht3_reader(filename):
+def _ht3_reader(filename):
     """Load raw t3 records and metadata from an HT3 file.
     """
     with open(filename, 'rb') as f:
@@ -409,7 +384,7 @@ def ht3_reader(filename):
         return t3records, timestamps_unit, nanotimes_unit, metadata
 
 
-def pt3_reader(filename):
+def _pt3_reader(filename):
     """Load raw t3 records and metadata from a PT3 file.
     """
     with open(filename, 'rb') as f:
@@ -523,7 +498,7 @@ def pt3_reader(filename):
         return t3records, timestamps_unit, nanotimes_unit, metadata
 
 
-def ptu_reader(filename):
+def _ptu_reader(filename):
     """Read the header and the raw t3 or t2 records from a PTU file.
     """
     # All the info about the PTU format has been inferred from PicoQuant demo:
@@ -579,12 +554,12 @@ def _read_header_tags(s):
     return tags, offset
 
 
-def phu_reader(filename):
+def _phu_reader(filename):
     """Load histogram records and metadata from a PHU file.
     """
     # All the info about the PHU format has been inferred from PicoQuant demo:
     # https://github.com/PicoQuant/PicoQuant-Time-Tagged-File-Format-Demos/blob/master/PHU/Matlab/Read_PHU.m
-    # this format header is simalarly encoded as ptu files see ptu_reader
+    # this format header is simalarly encoded as ptu files see _ptu_reader
 
     # Load only the first few bytes to see is file is valid
     with open(filename, 'rb') as f:
@@ -616,7 +591,7 @@ def phu_reader(filename):
     return histograms, histo_resolution, tags
 
 
-def t3r_reader(filename):
+def _t3r_reader(filename):
     """Load raw t3 records and metadata from a PT3 file.
     """
     with open(filename, 'rb') as f:
@@ -865,8 +840,8 @@ def _ptu_print_tags(tags):
             print(line, end=endline)
 
 
-def process_t3records(t3records, time_bit=10, dtime_bit=15,
-                      ch_bit=6, special_bit=True, ovcfunc=None):
+def _process_t3records(t3records, time_bit=10, dtime_bit=15,
+                       ch_bit=6, special_bit=True, ovcfunc=None):
     """Extract the different fields from the raw t3records array.
 
     The input array of t3records is an array of "records" (a C struct).
@@ -992,8 +967,8 @@ def process_t3records(t3records, time_bit=10, dtime_bit=15,
     return detectors, timestamps, nanotimes
 
 
-def process_t2records(t2records, time_bit=25,
-                      ch_bit=6, special_bit=True, ovcfunc=None):
+def _process_t2records(t2records, time_bit=25,
+                       ch_bit=6, special_bit=True, ovcfunc=None):
     """Extract the different fields from the raw t2records array.
 
     The input array of t2records is an array of "records" (a C struct).
@@ -1068,11 +1043,11 @@ def process_t2records(t2records, time_bit=25,
     return detectors, timestamps
 
 
-def process_t3records_t3rfile(t3records, reserved=1, valid=1, time_bit=12,
-                              dtime_bit=16, ch_bit=2, special_bit=False):
+def __process_t3records_t3rfile(t3records, reserved=1, valid=1, time_bit=12,
+                                dtime_bit=16, ch_bit=2, special_bit=False):
     """ Decode t3records from .T3R files.
 
-    See also :func:`process_t3records`.
+    See also :func:`_process_t3records`.
 
     Arguments:
         reserved (int): reserved bit
@@ -1175,7 +1150,7 @@ else:
 
 
 @njit
-def get_flim_data_frame_static(sync, tcspc, channel, special, header_variables, progress_proxy):
+def _get_flim_data_frame_static(sync, tcspc, channel, special, header_variables, progress_proxy):
     ImgHdr_Ident = header_variables[0]
     ImgHdr_PixX = header_variables[1]
     ImgHdr_PixY = header_variables[2]
@@ -1261,7 +1236,7 @@ def get_flim_data_frame_static(sync, tcspc, channel, special, header_variables, 
 
 
 @njit
-def get_flim_data_raw_static(sync, tcspc, channel, special, header_variables, progress_proxy):
+def _get_flim_data_raw_static(sync, tcspc, channel, special, header_variables, progress_proxy):
     ImgHdr_Ident = header_variables[0]
     ImgHdr_PixX = header_variables[1]
     ImgHdr_PixY = header_variables[2]
@@ -1354,7 +1329,7 @@ def get_flim_data_raw_static(sync, tcspc, channel, special, header_variables, pr
     return data[:, :unique_idx], shape
 
 
-def get_ptu_data_frame(sync, tcspc, chan, meta, is_raw=False):
+def _get_ptu_data_frame(sync, tcspc, chan, meta, is_raw=False):
     # Check if it's FLIM image
     if meta['tags']["Measurement_SubMode"] == 0:
         raise IOError("This is not a FLIM PTU file.!!! \n")
@@ -1383,15 +1358,15 @@ def get_ptu_data_frame(sync, tcspc, chan, meta, is_raw=False):
 
     if is_raw:
         with ProgressBar(total=len(sync)) as progress:
-            flim_data_dict, shape = get_flim_data_raw_static(sync, tcspc, chan, special, header_variables, progress)
+            flim_data_dict, shape = _get_flim_data_raw_static(sync, tcspc, chan, special, header_variables, progress)
         return (flim_data_dict, shape)
     else:
         with ProgressBar(total=len(sync)) as progress:
-            flim_data_stack = get_flim_data_frame_static(sync, tcspc, chan, special, header_variables, progress)
+            flim_data_stack = _get_flim_data_frame_static(sync, tcspc, chan, special, header_variables, progress)
         return flim_data_stack
 
 
-def get_pt3_data_frame(sync, tcspc, chan, meta, is_raw=False):
+def _get_pt3_data_frame(sync, tcspc, chan, meta, is_raw=False):
     special = ((chan == 15) * 1) * (np.bitwise_and(tcspc, 15) * 1)  # special marker locations
     index = ((chan == 15) * 1) * ((np.bitwise_and(tcspc, 15) == 0) * 1)
 
@@ -1408,11 +1383,11 @@ def get_pt3_data_frame(sync, tcspc, chan, meta, is_raw=False):
          meta['imghdr'][4], meta['imghdr'][2]], dtype=np.uint64)
     if is_raw:
         with ProgressBar(total=len(sync)) as progress:
-            flim_data_dict, shape = get_flim_data_raw_static(sync, tcspc, chan, special, header_variables, progress)
+            flim_data_dict, shape = _get_flim_data_raw_static(sync, tcspc, chan, special, header_variables, progress)
         return (flim_data_dict, shape)
     else:
         with ProgressBar(total=len(sync)) as progress:
-            flim_data_stack = get_flim_data_frame_static(sync, tcspc, chan, special, header_variables, progress)
+            flim_data_stack = _get_flim_data_frame_static(sync, tcspc, chan, special, header_variables, progress)
         print(flim_data_stack.shape)
         return flim_data_stack
 
@@ -1438,17 +1413,19 @@ def plot_sequence_images(image_array):
 
 
 def load_ptfile(filename, is_raw=False):
-    '''
-    :param filename:
-    :return: flim_data_stack is of size (num_pixel_Y, num_pixel_X, channels, num_of_frames, num_tcspc_channel)
+    '''Load a .ptu or .ptu into a numpy array
+
+    :param filename: Name of file to load
+    :return flim_data_stack: numpyarray of size (num_pixel_Y, num_pixel_X, channels, num_of_frames, num_tcspc_channel)
+    :return meta: metadata dictionary
     '''
     name, ext = os.path.splitext(filename)
     if ext == ".ptu":
-        sync, channel, tcspc, meta = load_ptu(filename)
-        flim_data = get_ptu_data_frame(sync, tcspc, channel, meta, is_raw)
+        sync, channel, tcspc, meta = _load_ptu(filename)
+        flim_data = _get_ptu_data_frame(sync, tcspc, channel, meta, is_raw)
     elif ext == ".pt3":
-        sync, channel, tcspc, meta = load_pt3(filename)
-        flim_data = get_pt3_data_frame(sync, tcspc, channel, meta, is_raw)
+        sync, channel, tcspc, meta = _load_pt3(filename)
+        flim_data = _get_pt3_data_frame(sync, tcspc, channel, meta, is_raw)
     else:
         raise ValueError(f'format of {ext} is not supported!')
     return flim_data, meta

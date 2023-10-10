@@ -99,6 +99,12 @@ def __reverse_process_t3records(detectors, timestamps, nanotimes, time_bit=16, d
 
 
 def write_pt3(meta, flim_data_stack, filename):
+    """Write a FLIM data stack to a .pt3 file
+
+    :param meta: Must be the same meta dictionary from pqreader.load_ptfile function
+    :param flim_data_stack: A numpy array, usually after applying motion correction algorightms
+    :param filename: Output filename
+    """
     timestamps, detectors, nanotimes = __reverse_get_pt3_data_frame(flim_data_stack, meta)
     t3records = __reverse_process_t3records(detectors, timestamps, nanotimes)
 

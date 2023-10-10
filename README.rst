@@ -18,18 +18,6 @@ Motion correction algorithms for FLIM data.
 * Free software: MIT license
 * Documentation: https://motion-correction.readthedocs.io.
 
-GPU Support
------------
-
-Some algorithms run faster with a GPU. 
-`CUDA Toolkit <https://developer.nvidia.com/cuda-downloads>` must be installed to run on GPU.
-Alternatively if using conda, `conda install -c nvidia cuda-toolkit`
-
-Features
---------
-
-* Various algorithms to correct FLIM (.ptu and .pt3) files
-* Refer to `Tutorial.ipynb <https://github.com/Garvan-Data-Science-Platform/motion-correction/blob/main/desktop/Tutorial.ipynb>` for an example of the library in use
 
 Credits
 -------

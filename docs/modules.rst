@@ -1,4 +1,4 @@
-motion_correction
+API Docs
 =================
 
 .. toctree::

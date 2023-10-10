@@ -1,24 +1,8 @@
 motion\_correction package
 ==========================
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 4
-
-   motion_correction.cudipy
-
 Submodules
 ----------
-
-motion\_correction.algorithms module
-------------------------------------
-
-.. automodule:: motion_correction.algorithms
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 motion\_correction.motion\_correction module
 --------------------------------------------
