@@ -27,7 +27,7 @@ requirements = [
     "scikit-image>=0.21",
     "sparse>=0.14.0",
     "numba_progress>=1.1.0",
-    "cupy-cuda112",
+    "cupy-cuda11x",
 ]
 
 test_requirements = ['pytest>=3', ]
@@ -57,6 +57,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/Garvan-Data-Science-Platformmotion_correction',
-    version='0.1.1',
+    version='0.1.2',
     zip_safe=False,
 )
