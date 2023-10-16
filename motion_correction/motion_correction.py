@@ -144,9 +144,15 @@ def calculate_correction(
         metrics['nrm']['corrected'][i] = skm.normalized_root_mse(ref_frame, intensity_data_stack_corrected[:, :, i])
         metrics['nrm']['global_corrected'][i] = skm.normalized_root_mse(ref_frame, intensity_data_stack_global_corrected[:, :, i])
 
-        metrics['ssi']['original'][i] = skm.structural_similarity(ref_frame, intensity_data_stack[:, :, i])
-        metrics['ssi']['corrected'][i] = skm.structural_similarity(ref_frame, intensity_data_stack_corrected[:, :, i])
-        metrics['ssi']['global_corrected'][i] = skm.structural_similarity(ref_frame, intensity_data_stack_global_corrected[:, :, i])
+        def norm2uint8(data):
+            return ((data - data.min()) / (data.max() - data.min()) * 255).astype(np.uint8)
+
+        metrics['ssi']['original'][i] = skm.structural_similarity(
+            norm2uint8(ref_frame), norm2uint8(intensity_data_stack[:, :, i]), data_range=255)
+        metrics['ssi']['corrected'][i] = skm.structural_similarity(
+            norm2uint8(ref_frame), norm2uint8(intensity_data_stack_corrected[:, :, i]), data_range=255)
+        metrics['ssi']['global_corrected'][i] = skm.structural_similarity(
+            norm2uint8(ref_frame), norm2uint8(intensity_data_stack_global_corrected[:, :, i]), data_range=255)
 
         local_transforms[:, :, :, i] = frame_transform_local
         global_transforms[:, :, :, i] = frame_transform_global

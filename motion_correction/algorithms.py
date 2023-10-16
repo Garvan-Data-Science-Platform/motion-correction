@@ -68,12 +68,19 @@ class Phase(_CorrectionAlgorithm):
         # xpad, ypad = int(np.ceil(np.abs(xoff))), int(np.ceil(np.abs(yoff)))
         # tst_frame_padded = np.pad(moving_img, ((ypad, ypad), (xpad, xpad)), mode='symmetric')
 
-        aligned = shift.shiftnd(moving_img, (-yoff, -xoff))
-        # aligned = aligned[ypad//2:moving_img.shape[0]+ypad//2, xpad//2:moving_img.shape[1]+xpad//2]
+    # aligned = shift.shiftnd(moving_img, (-yoff, -xoff))
+    # aligned = aligned[ypad//2:moving_img.shape[0]+ypad//2, xpad//2:moving_img.shape[1]+xpad//2]
 
         transform = np.zeros((2, *fixed_img.shape), dtype=np.float32)
         transform[0, ...] = yoff
         transform[1, ...] = xoff
+
+        row_coords, col_coords = np.meshgrid(
+            np.arange(moving_img.shape[0]), np.arange(moving_img.shape[1]), indexing='ij')
+
+        aligned = warp(moving_img,
+                       np.array([row_coords + transform[0], col_coords + transform[1]]),
+                       mode='symmetric', preserve_range=True)
 
         return aligned, transform
 
