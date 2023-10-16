@@ -200,7 +200,8 @@ class FlimAligner:
         """
         Apply FLIM data correction to the loaded data.
 
-        This method applies FLIM data correction to the loaded FLIM intensity data. It uses various algorithms and transformations to correct the data.
+        This method applies FLIM data correction to the loaded raw FLIM data.
+        It uses the transformations estimated in function apply_correction_intensity to correct the data.
 
         Note:
             This method assumes that the FLIM data has already been loaded using the `get_intensity_stack` method.
