@@ -66,7 +66,7 @@ coverage: ## check code coverage quickly with the default Python
 
 docs: ## generate Sphinx HTML documentation, including API docs
 	rm -f docs/motion_correction.rst
-	sphinx-apidoc -o docs/ motion_correction motion_correction/cudipy motion_correction/algorithms.py
+	sphinx-apidoc -o docs/ motion_correction motion_correction/cudipy
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 	$(BROWSER) docs/_build/html/index.html

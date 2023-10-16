@@ -12,6 +12,14 @@ Subpackages
 Submodules
 ----------
 
+motion\_correction.algorithms module
+------------------------------------
+
+.. automodule:: motion_correction.algorithms
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 motion\_correction.motion\_correction module
 --------------------------------------------
 
