@@ -51,13 +51,12 @@ class Phase(_CorrectionAlgorithm):
         """
         Aligns two images using phase correlation-based alignment.
 
-        Parameters:
-        - fixed_img (ndarray): The reference image.
-        - moving_img (ndarray): The image to be aligned.
-
-        Returns:
-        - aligned (ndarray): The aligned version of the moving image.
-        - transform (ndarray): A 2xN array representing the translation in the y and x dimensions.
+        :param fixed_img: (ndarray) The reference image.
+        :param moving_img: (ndarray) The image to be aligned.
+        :param sigma_diff: (float) The standard deviation for difference calculation (default: 20).
+        :param radius: (int) The radius for the cross-correlation computation (default: 15).
+        :return aligned: (ndarray) The aligned version of the moving image.
+        :return transform: (ndarray) A 3x3 transformation matrix.
 
         Note:
         This function computes the translation between two images using phase correlation
@@ -88,14 +87,12 @@ class OpticalILK(_CorrectionAlgorithm):
         """
         Aligns two images using the Iterative Lucas-Kanade (ILK) optical flow algorithm.
 
-        Parameters:
-        - fixed_img (ndarray): The reference image.
-        - moving_img (ndarray): The image to be aligned.
-
-        Returns:
-        - aligned (ndarray): The aligned version of the moving image.
-        - transform (ndarray): A 2xN array representing the optical flow vectors (u, v).
-
+        :param fixed_img: (ndarray) The reference image.
+        :param moving_img: (ndarray) The image to be aligned.
+        :param sigma_diff: (float) The standard deviation for difference calculation (default: 20).
+        :param radius: (int) The radius for the cross-correlation computation (default: 15).
+        :return aligned: (ndarray) The aligned version of the moving image.
+        :return transform: (ndarray) A 3x3 transformation matrix.
 
         """
 
@@ -125,13 +122,12 @@ class OpticalTVL1(_CorrectionAlgorithm):
     def align(self, fixed_img, moving_img):
         """
 
-        Parameters:
-        - fixed_img (ndarray): The reference image.
-        - moving_img (ndarray): The image to be aligned.
-
-        Returns:
-        - aligned (ndarray): The aligned version of the moving image.
-        - transform (ndarray): A 2xN array representing the optical flow vectors (u, v).
+        :param fixed_img: (ndarray) The reference image.
+        :param moving_img: (ndarray) The image to be aligned.
+        :param sigma_diff: (float) The standard deviation for difference calculation (default: 20).
+        :param radius: (int) The radius for the cross-correlation computation (default: 15).
+        :return aligned: (ndarray) The aligned version of the moving image.
+        :return transform: (ndarray) A 3x3 transformation matrix.
 
         Note:
         This function estimates the optical flow between two images using the TV-L1 algorithm
@@ -166,14 +162,13 @@ class OpticalPoly(_CorrectionAlgorithm):
 
     def align(self, fixed_img, moving_img):
         """
-        Parameters:
-        - fixed_img (ndarray): The reference image.
-        - moving_img (ndarray): The image to be aligned.
 
-        Returns:
-        - aligned (ndarray): The aligned version of the moving image.
-        - transform (ndarray): A 2xN array representing the optical flow vectors (u, v).
-
+        :param fixed_img: (ndarray) The reference image.
+        :param moving_img: (ndarray) The image to be aligned.
+        :param sigma_diff: (float) The standard deviation for difference calculation (default: 20).
+        :param radius: (int) The radius for the cross-correlation computation (default: 15).
+        :return aligned: (ndarray) The aligned version of the moving image.
+        :return transform: (ndarray) A 3x3 transformation matrix.
         Note:
         This function estimates the optical flow between two images using polynomial expansion
         and applies the estimated flow to align the moving image with the fixed image.
@@ -215,28 +210,22 @@ class Morphic(_CorrectionAlgorithm):
         self.algorithm_type = 'local'
 
     def align(self, fixed_img, moving_img):
+        """
+        Aligns two images using MORPHIC image registration.
+
+        :param fixed_img: (ndarray) The reference image.
+        :param moving_img: (ndarray) The image to be aligned.
+        :param sigma_diff: (float) The standard deviation for difference calculation (default: 20).
+        :param radius: (int) The radius for the cross-correlation computation (default: 15).
+        :return aligned: (ndarray) The aligned version of the moving image.
+        :return transform: (ndarray) A 3x3 transformation matrix.
+        """
         if torch.cuda.is_available():
             return self.align_morphic_gpu(fixed_img, moving_img)
         else:
             return self.align_morphic_cpu(fixed_img, moving_img)
 
     def align_morphic_cpu(self, fixed_img, moving_img):
-        """
-        Aligns two images using CPU-based MORPHIC image registration.
-
-        Parameters:
-        - fixed_img (ndarray): The reference image.
-        - moving_img (ndarray): The image to be aligned.
-        - sigma_diff (float): The standard deviation for difference calculation (default: 20).
-        - radius (int): The radius for the cross-correlation computation (default: 15).
-
-        Returns:
-        - aligned (ndarray): The aligned version of the moving image.
-        - transform (ndarray): A 3x3 transformation matrix.
-
-        Note:
-        This function performs image registration using the MORPHIC method on the CPU.
-        """
 
         metric = ccmetric_cpu(2, sigma_diff=self.sigma_diff, radius=self.radius)
         level_iters = [10, 10, 5]
@@ -246,21 +235,7 @@ class Morphic(_CorrectionAlgorithm):
         return aligned, np.moveaxis(mapping.backward, [0, 1, 2], [1, 2, 0])
 
     def align_morphic_gpu(self, fixed_img, moving_img):
-        """
-        Aligns two images using GPU-based MORPHIC image registration.
 
-        Parameters:
-        - fixed_img (ndarray): The reference image.
-        - moving_img (ndarray): The image to be aligned.
-
-
-        Returns:
-        - aligned (ndarray): The aligned version of the moving image.
-        - transform (ndarray): A 3x3 transformation matrix.
-
-        Note:
-        This function performs image registration using the MORPHIC method on the GPU.
-        """
         from .cudipy.align.imwarp import SymmetricDiffeomorphicRegistration as morphic_gpu
         import cupy as cp
         from .cudipy.align.metrics import CCMetric as ccmetric_gpu

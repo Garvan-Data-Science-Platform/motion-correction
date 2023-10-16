@@ -56,9 +56,14 @@ Convert flim data stack to an intensity stack for a single channel. Shape: (widt
 
     intensity_stack = get_intensity_stack(flim_data_stack, 2)
 
+Choose a local and/or global correction algorithm::
+
+    from motion_correction.algorithms import Morphic
+    morphic = Morphic(radius=16)
+
 Correct intensity stack::
 
-    results = calculate_correction(intensity_stack, 0, local_algorithm="morphic")
+    results = calculate_correction(intensity_stack, 0, local_algorithm=morphic)
 
 Apply correction to flim data::
 
