@@ -327,12 +327,12 @@ class CCMetric(SimilarityMetric):
         )
         if self.coord_axis == -1:
             for i in range(self.dim):
-                displacement[..., i] = ndimage.filters.gaussian_filter(
+                displacement[..., i] = ndimage._filters.gaussian_filter(
                     displacement[..., i], self.sigma_diff
                 )
         else:
             for i in range(self.dim):
-                displacement[i] = ndimage.filters.gaussian_filter(
+                displacement[i] = ndimage._filters.gaussian_filter(
                     displacement[i], self.sigma_diff
                 )
         return displacement
@@ -351,12 +351,12 @@ class CCMetric(SimilarityMetric):
         )
         if self.coord_axis == -1:
             for i in range(self.dim):
-                displacement[..., i] = ndimage.filters.gaussian_filter(
+                displacement[..., i] = ndimage._filters.gaussian_filter(
                     displacement[..., i], self.sigma_diff
                 )
         else:
             for i in range(self.dim):
-                displacement[i] = ndimage.filters.gaussian_filter(
+                displacement[i] = ndimage._filters.gaussian_filter(
                     displacement[i], self.sigma_diff
                 )
         return displacement

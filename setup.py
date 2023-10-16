@@ -16,17 +16,15 @@ requirements = [
     'numba-progress>=1.1.0',
     'opencv-python>=4.8',
     "torch>=2.0.1",
-    "numpy==1.23.3",
+    "numpy==1.23.5",
     "pyimof==1.0.0",
     "matplotlib==3.7.2",
-    "numba>=0.58.0",
     "image-registration==0.2.6",
     "pytest>=7.4",
     "dipy>=1.7.0",
     "tqdm>=4.66",
     "scikit-image>=0.21",
     "sparse>=0.14.0",
-    "numba_progress>=1.1.0",
     "cupy-cuda11x",
 ]
 
@@ -57,6 +55,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/Garvan-Data-Science-Platformmotion_correction',
-    version='0.1.2',
+    version='0.1.5',
     zip_safe=False,
 )

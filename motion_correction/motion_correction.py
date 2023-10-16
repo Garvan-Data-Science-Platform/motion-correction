@@ -6,7 +6,8 @@ from numpy.typing import NDArray
 from tqdm import tqdm
 import torch
 import skimage.metrics as skm
-from .algorithms import align_morphic_cpu, align_phase, align_optical_ilk, align_optical_poly, align_optical_tvl1, align_morphic_gpu, flow_warp
+from .algorithms import _CorrectionAlgorithm
+import torch.nn.functional as F
 
 
 # This defines the API for the python package
@@ -15,6 +16,13 @@ from .algorithms import align_morphic_cpu, align_phase, align_optical_ilk, align
 flim_data_stack: (width, height, n_channels, n_frames, n_nanotimes)
 intensity_data_stack: (width,height,n_frames)
 '''
+
+device = "cpu"
+if torch.cuda.is_available():
+    device = "cuda:0"
+    print("Using GPU")
+else:
+    print("No GPU detected, or CUDA toolkit not installed. https://developer.nvidia.com/cuda-downloads")
 
 
 class Metric(TypedDict):
@@ -60,21 +68,17 @@ def get_intensity_stack(
 def calculate_correction(
         intensity_data_stack: NDArray[np.uint8],
         reference_frame: int = 0,
-        local_algorithm: str | None = None,
-        local_params: dict | None = None,
-        global_algorithm: str | None = None,
-        global_params: dict | None = None,
+        local_algorithm: _CorrectionAlgorithm | None = None,
+        global_algorithm: _CorrectionAlgorithm | None = None,
 ) -> CorrectionResults:
     """Calculates motion correction for given intensity data stack based on chosen algorithms
 
     :param intensity_data_stack: A numpy array defining the intensity frames to use for correction (output of get_intensity_stack)
     :param reference_frame: The reference frame to use
-    :param local_algorithm: Optional, Name of local correction algorithm to apply, valid options include 'morphic', 'optical_tvl1', 'optical_poly', 'optical_ilk'
-    :param local_params: Optional, A dictionary defining parameters to apply to the local algorithm, refer to docs
-    :param global_algorithm: Optional, Name of global correction algorithm to apply, valid options include 'phase'
-    :param global_params: Optional, A dictionary defining parameters to use with global correction algorithm
+    :param local_algorithm: Optional, CorrectionAlgorithm to use, imported from motion_correction.algorithms
+    :param global_algorithm: Optional, CorrectionAlgorithm to use, imported from motion_correction.algorithms
 
-    :return CorrectionResults: dictionar with keys:
+    :return CorrectionResults: dictionary with keys:
             - **global_corrected_intensity_data_stack**: original intensity data stack with global corrections applied
             - **corrected_intensity_data_stack**: original intensity data stack with : original intensity data stack with global and local corrections applied
             - **metrics**: dict with fields for each metric (ncc, mse, nrm, ssi), with each entry looking like
@@ -106,7 +110,7 @@ def calculate_correction(
             'corrected': np.zeros((num_frames,), dtype=np.float32),
             'global_corrected': np.zeros((num_frames,), dtype=np.float32)
         }
-
+    print("LOCAL", local_algorithm)
     for i in (pbar := tqdm(range(num_frames))):
         pbar.set_description("Aligning frames")
         if i == reference_frame:
@@ -114,24 +118,17 @@ def calculate_correction(
             continue
 
         tst_frame = intensity_data_stack[:, :, i]
-        if global_algorithm == 'phase':
-            aligned, frame_transform_global = align_phase(ref_frame, tst_frame)
+        if global_algorithm:
+            assert global_algorithm.algorithm_type == 'global'
+            aligned, frame_transform_global = global_algorithm.align(ref_frame, tst_frame)
         else:
             aligned, frame_transform_global = tst_frame, np.zeros_like(tst_frame, dtype=np.float32)
 
         intensity_data_stack_global_corrected[:, :, i] = aligned
 
-        if local_algorithm == "optical_poly":
-            intensity_data_stack_corrected[:, :, i], frame_transform_local = align_optical_poly(ref_frame, aligned)
-        elif local_algorithm == "optical_ilk":
-            intensity_data_stack_corrected[:, :, i], frame_transform_local = align_optical_ilk(ref_frame, aligned)
-        elif local_algorithm == "optical_tvl1":
-            intensity_data_stack_corrected[:, :, i], frame_transform_local = align_optical_tvl1(ref_frame, aligned)
-        elif local_algorithm == "morphic":
-            if torch.cuda.is_available():
-                intensity_data_stack_corrected[:, :, i], frame_transform_local = align_morphic_gpu(ref_frame, aligned)
-            else:
-                intensity_data_stack_corrected[:, :, i], frame_transform_local = align_morphic_cpu(ref_frame, aligned)
+        if local_algorithm:
+            assert local_algorithm.algorithm_type == "local"
+            intensity_data_stack_corrected[:, :, i], frame_transform_local = local_algorithm.align(ref_frame, aligned)
         else:
             intensity_data_stack_corrected[:, :, i], frame_transform_local = aligned, np.zeros_like(tst_frame, dtype=np.float32)
 
@@ -202,7 +199,7 @@ def apply_correction_flim(
             # frame = gcxs[:, :, ch, frame_idx, :].todense().astype(np.float32)
             frame = flim_data_stack[:, :, ch, frame_idx, :].astype(np.float32)
             flow = transform_matrix[:, :, :, frame_idx]
-            warped, warped_int = flow_warp(frame, flow)  # Z x H x W
+            warped, warped_int = _flow_warp(frame, flow)  # Z x H x W
             corrected_flim_data_stack[:, :, ch, frame_idx, :] = np.moveaxis(warped_int.astype(np.uint8), [0, 1, 2], [2, 0, 1])
 
     if exclude:
@@ -241,3 +238,86 @@ def _ncc(patch1, patch2):
     else:
         product /= stds
         return product
+
+
+def _flow_warp(frame, flow, padding_mode='reflection'):
+    # frame: H x W x C, flow: 2 (y, x) x H x W
+    rows, cols = frame.shape[0], frame.shape[1]
+    col_coords, row_coords = np.meshgrid(np.arange(rows), np.arange(cols), indexing='xy')
+    assert frame.shape[:2] == flow.shape[-2:]
+
+    frame_tensor = torch.tensor(frame).permute(2, 0, 1).unsqueeze(0).float().to(device)  # 1 x C x H x W
+
+    grid = np.array([col_coords + flow[1, :, :], row_coords + flow[0, :, :]], dtype=np.float32)
+    grid[0, :, :] = 2.0 * grid[0, :, :] / (cols-1) - 1.0
+    grid[1, :, :] = 2.0 * grid[1, :, :] / (rows-1) - 1.0
+    grid_tensor = torch.tensor(grid).permute(1, 2, 0).unsqueeze(0).float().to(device)   # 1 x H x W x 2 (x, y)
+
+    warped = F.grid_sample(frame_tensor, grid_tensor, padding_mode=padding_mode, align_corners=True)
+    # warped_int = cascade_round_tensor_hist(warped.squeeze(0).permute((1, 2, 0))).permute((2, 0, 1)).unsqueeze(0)
+    warped_int = _cascade_round_tensor(warped)
+    return torch.squeeze(warped).cpu().numpy(), torch.squeeze(warped_int).cpu().numpy().astype(np.uint16)
+
+    # warped = cascade_round_tensor(
+    #     F.grid_sample(frame_tensor, grid_tensor, padding_mode=padding_mode, align_corners=True))
+    # return torch.squeeze(warped).cpu().numpy().astype(np.uint16)
+
+
+def _cascade_round_tensor(tensor):
+    tsr_sum = tensor.sum(dim=0, keepdim=True)
+    lwr_tsr = tensor.floor()
+    lwr_sum = lwr_tsr.sum(axis=0, keepdims=True)
+    count_tensor = tsr_sum - lwr_sum
+    random_mask = torch.rand(*tensor.shape, device=tensor.device) * tensor.shape[0] <= count_tensor
+
+    return (lwr_tsr + random_mask).int()
+
+
+def _hist_laxis_tensor(data, n_bins, range_limits):
+    # Move data to CUDA if available
+    if torch.cuda.is_available():
+        data = data.cuda()
+
+    # Setup bins and determine the bin location for each element for the bins
+    N = data.shape[-1]
+    bins = torch.linspace(range_limits[0], range_limits[1], n_bins + 1, device="cuda")
+    data2D = data.view(-1, N)
+    idx = torch.searchsorted(bins, data2D.contiguous(), right=True) - 1
+
+    # Some elements would be off limits, so get a mask for those
+    bad_mask = (idx == -1) | (idx == n_bins)
+
+    # We need to use bincount to get bin based counts. To have unique IDs for
+    # each row and not get confused by the ones from other rows, we need to
+    # offset each row by a scale (using row length for this).
+    scaled_idx = n_bins * torch.arange(data2D.shape[0]).unsqueeze(1).to(data.device) + idx
+
+    # Set the bad ones to be last possible index+1 : n_bins*data2D.shape[0]
+    limit = n_bins * data2D.shape[0]
+    scaled_idx[bad_mask] = limit
+
+    # Get the counts and reshape to multi-dim
+    counts = torch.bincount(scaled_idx.view(-1), minlength=limit + 1)[:-1]
+    counts = counts.view(data.shape[:-1] + (n_bins,))
+    return counts
+
+
+def _cascade_round_tensor_hist(tensor, num_bins=50):
+    rows, cols = tensor.shape[:2]
+    array = tensor.cuda() if torch.cuda.is_available() else torch.tensor(tensor)
+    flr_arr = array.floor()
+    arr_sum = array.sum(dim=-1, keepdim=True)
+    flr_sum = flr_arr.sum(dim=-1, keepdim=True)
+    dif_sum = arr_sum - flr_sum
+
+    # Estimate histogram
+    residuals = array - flr_arr
+    hist = _hist_laxis_tensor(residuals, n_bins=num_bins, range_limits=(0, 1))
+    cum_sum = hist.flip(dims=[-1, ]).cumsum(dim=-1)
+
+    indices = torch.argmax((cum_sum > dif_sum).int(), dim=-1)
+    bins = torch.linspace(0, 1, num_bins + 1, device='cuda')
+    thresholds = bins[num_bins - indices.flatten()].reshape((rows, cols, 1))
+    random_mask = residuals > thresholds
+
+    return (flr_arr + random_mask).int()

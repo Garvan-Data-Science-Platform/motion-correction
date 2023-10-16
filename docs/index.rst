@@ -29,11 +29,12 @@ GPU Support
 +++++++++++
 
 Some algorithms run faster with a GPU. 
-`CUDA Toolkit <https://developer.nvidia.com/cuda-downloads>`_ must be installed to run on GPU.
+`CUDA Toolkit 11.2 - 11.8 <https://developer.nvidia.com/cuda-11-8-0-download-archive>`_ must be installed to run on GPU.
 
+Alternatively,
 .. code-block:: console
 
-    $ conda install -c nvidia cuda-toolkit`
+    $ conda install -c "nvidia/label/cuda-11.8.0" cuda-toolkit`
 
 .. highlight:: python
 

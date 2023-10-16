@@ -8,7 +8,7 @@ import logging
 
 import numpy as np
 import cupy as cp
-from cupyx.scipy.ndimage import filters
+from cupyx.scipy.ndimage import _filters
 from dipy.align import floating
 
 logger = logging.getLogger(__name__)
@@ -111,7 +111,7 @@ class ScaleSpace(object):
             sigmas = sigma_factor * (output_spacing / input_spacing - 1.0)
 
             # Filter along each direction with the appropriate sigma
-            filtered = filters.gaussian_filter(image, sigmas)
+            filtered = _filters.gaussian_filter(image, sigmas)
             filtered = (filtered - filtered.min()) / cp.ptp(filtered)
             if mask0:
                 filtered *= mask
@@ -426,7 +426,7 @@ class IsotropicScaleSpace(ScaleSpace):
             new_sigmas = np.ones(self.dim) * sigmas[self.num_levels - i - 1]
 
             # Filter along each direction with the appropriate sigma
-            filtered = filters.gaussian_filter(
+            filtered = _filters.gaussian_filter(
                 image.astype(np.float64), new_sigmas
             )
             filtered = (filtered.astype(np.float64) - filtered.min()) / cp.ptp(

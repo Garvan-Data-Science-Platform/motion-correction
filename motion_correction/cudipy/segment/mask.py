@@ -1,7 +1,7 @@
 from warnings import warn
 
 import cupy as cp
-from cupyx.scipy.ndimage.filters import median_filter
+from cupyx.scipy.ndimage._filters import median_filter
 from cupyx.scipy.ndimage import binary_dilation, generate_binary_structure
 
 

@@ -1,4 +1,5 @@
-from motion_correction import calculate_correction, flow_warp, stream_one_frame
+from motion_correction.motion_correction import _flow_warp, calculate_correction
+from motion_correction.algorithms import _CorrectionAlgorithm
 import os
 import sparse
 import numpy as np
@@ -9,16 +10,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from motion_correction.pqreader import load_ptfile
 from .utility import join_path, save_sequence_images
+from numba import njit
 
 np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
-
-
-class AlignMethod(Enum):
-    PHASE = 'phase'
-    MORPHIC = 'morphic'
-    OPTICAL_TVL1 = 'optical_tvl1'
-    OPTICAL_POLY = 'optical_poly'
-    OPTICAL_ILK = 'optical_ilk'
 
 
 class SimMetric(Enum):
@@ -84,7 +78,7 @@ class FlimAligner:
         self.new_sim = None
         self.meta = None
 
-    def set_methods(self, global_method=None, local_method=None):
+    def set_methods(self, global_method: _CorrectionAlgorithm | None = None, local_method: _CorrectionAlgorithm | None = None):
         """
         Set the global and local alignment methods.
 
@@ -92,15 +86,16 @@ class FlimAligner:
             global_method (AlignMethod): The global alignment method.
             local_method (AlignMethod): The local alignment method.
         """
-        if type(global_method) is AlignMethod:
+        if type(global_method) is _CorrectionAlgorithm:
+            assert global_method.algorithm_type == "global"
             global_method = global_method.value
 
-        if type(local_method) is AlignMethod:
+        if type(local_method) is _CorrectionAlgorithm:
+            assert global_method.algorithm_type == "local"
             local_method = local_method.value
 
         self.global_method = global_method
         self.local_method = local_method
-        print(self.global_method)
 
     def set_sim_metric(self, sim=SimMetric.NCC):
         """
@@ -150,7 +145,7 @@ class FlimAligner:
 
         assert 0 <= ref_frame_idx < self.shape[2]
 
-        results = calculate_correction(self.flim_frames, ref_frame_idx, self.local_method, global_algorithm=self.global_method)
+        results = calculate_correction(self.flim_frames, ref_frame_idx, self.local_method, self.global_method)
 
         self.transforms = results["combined_transforms"]
         self.old_sim = results["metrics"][self.sim_metric.value]["original"]
@@ -250,12 +245,12 @@ class FlimAligner:
                 frame = gcxs[:, :, ch, frame_idx, :].todense().astype(np.float32)
                 self.curve_fit += frame.astype(np.uint16).transpose(2, 1, 0)
                 flow = self.transforms[:, :, :, frame_idx]
-                warped, warped_int = flow_warp(frame, flow)  # Z x H x W
+                warped, warped_int = _flow_warp(frame, flow)  # Z x H x W
                 self.curve_fit_corrected += warped
                 self.curve_fit_corrected_int += warped_int
                 corrected_frames[:, :, ch, :] = np.moveaxis(warped_int, [0, 1, 2], [2, 0, 1])
 
-            sync, chan, tcspc, current_ts, ts_index = stream_one_frame(
+            sync, chan, tcspc, current_ts, ts_index = _stream_one_frame(
                 corrected_frames, LineStartMarker, LineStopMarker, FrameMarker, current_ts, ts_index)
             timestamps = np.concatenate((timestamps, sync), axis=0)
             detectors = np.concatenate((detectors, chan), axis=0)
@@ -275,3 +270,63 @@ class FlimAligner:
                 f.write(np.array(self.meta[m]).tobytes())
             f.write(np.array(self.meta['imghdr']))
             f.write(t3records.astype(np.uint32))
+
+
+@njit
+def _stream_one_frame(corrected_frames, LineStartMarker, LineStopMarker, FrameMarker, current_ts=0, ts_index=0):
+    num_rows, num_cols, num_channels, num_nanotimes = corrected_frames.shape
+    total_entries = int(corrected_frames.sum()*2 + 1 + num_rows * 2)
+
+    # Initialize arrays
+    sync = np.zeros(total_entries, dtype=np.uint32)
+    chan = np.zeros(total_entries, dtype=np.uint32)
+    tcspc = np.zeros(total_entries, dtype=np.uint32)
+
+    idx = 0
+    for r in range(num_rows):
+        # LineStartMarker
+        sync[idx] = current_ts
+        chan[idx] = 15
+        tcspc[idx] = LineStartMarker
+        idx += 1
+
+        for ch in range(num_channels):
+            for c in range(num_cols):
+                ts = current_ts + c
+                if ts >= 65536 * (1 + ts_index):
+                    ts_index += 1
+                    sync[idx] = ts
+                    chan[idx] = 15
+                    tcspc[idx] = 0
+                    idx += 1
+
+                num_non_zeros = np.sum(corrected_frames[r, c, ch, :])
+                sync[idx:idx+num_non_zeros] = np.repeat(ts, num_non_zeros)
+                chan[idx:idx+num_non_zeros] = np.repeat(ch + 1, num_non_zeros)
+                tcspc[idx:idx+num_non_zeros] = np.repeat(np.arange(num_nanotimes), corrected_frames[r, c, ch, :])
+                idx += num_non_zeros
+
+        current_ts += num_cols
+
+        if current_ts >= 65536 * (1 + ts_index):
+            ts_index += 1
+            sync[idx] = current_ts
+            chan[idx] = 15
+            tcspc[idx] = 0
+            idx += 1
+
+        sync[idx] = current_ts
+        chan[idx] = 15
+        tcspc[idx] = LineStopMarker
+        idx += 1
+
+    sync[idx] = current_ts
+    chan[idx] = 15
+    tcspc[idx] = FrameMarker
+    idx += 1
+
+    sync = sync[:idx]
+    chan = chan[:idx]
+    tcspc = tcspc[:idx]
+
+    return sync, chan, tcspc, current_ts, ts_index

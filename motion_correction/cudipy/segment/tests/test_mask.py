@@ -15,7 +15,7 @@ from cudipy.segment.mask import (
 )
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti_data
-from cupyx.scipy.ndimage.filters import median_filter
+from cupyx.scipy.ndimage._filters import median_filter
 from cupyx.scipy.ndimage import binary_dilation, generate_binary_structure
 
 
