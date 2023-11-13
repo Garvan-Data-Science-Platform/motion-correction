@@ -1153,8 +1153,30 @@ else:
     _correct_overflow = _correct_overflow2
 
 
+def _get_flim_shape(sync, tcspc, channel, special, header_variables):
+    ImgHdr_Ident = header_variables[0]
+    ImgHdr_PixX = header_variables[1]
+    ImgHdr_PixY = header_variables[2]
+    ImgHdr_Frame = header_variables[5]
+
+    if (ImgHdr_Ident == 9) or (ImgHdr_Ident == 3):  # Identifiers the scanner hardware. (3: LSM, 9: FLIMBee)
+        num_of_detectors = np.unique(channel).size - 1
+        num_tcspc_channel = np.unique(tcspc).size
+        num_pixel_X = ImgHdr_PixX
+        num_pixel_Y = ImgHdr_PixY
+
+        # Markers necessary to make FLIM image stack
+        FrameMarker = 2 ** (ImgHdr_Frame - 1)
+
+        # Get Number of Frames
+        FrameSyncVal = sync[np.where(special == FrameMarker)]
+        num_of_frames = FrameSyncVal.size
+
+        return (num_pixel_Y, num_pixel_X, num_of_detectors, num_of_frames, num_tcspc_channel)
+
+
 @njit
-def _get_flim_data_frame_static(sync, tcspc, channel, special, header_variables, progress_proxy):
+def _get_flim_data_frame_static(sync, tcspc, channel, special, header_variables, progress_proxy, startpoint=0):
     ImgHdr_Ident = header_variables[0]
     ImgHdr_PixX = header_variables[1]
     ImgHdr_PixY = header_variables[2]
@@ -1178,7 +1200,7 @@ def _get_flim_data_frame_static(sync, tcspc, channel, special, header_variables,
         num_of_frames = FrameSyncVal.size
         read_data_range = np.where(sync == FrameSyncVal[num_of_frames - 1])[0][0]
 
-        flim_data_stack = np.zeros((num_pixel_Y, num_pixel_X, num_of_detectors, num_of_frames, num_tcspc_channel), dtype=np.uint8)
+        flim_data_stack_frame = np.zeros((num_pixel_Y, num_pixel_X, num_of_detectors, num_tcspc_channel), dtype=np.uint8)
 
         L1 = sync[np.where(special == LineStartMarker)]  # Get Line start marker sync values
         L2 = sync[np.where(special == LineStopMarker)]  # Get Line start marker sync values
@@ -1194,8 +1216,8 @@ def _get_flim_data_frame_static(sync, tcspc, channel, special, header_variables,
 
         # when only zero/one frame marker is present in TTTR file
         insideFrame = num_of_frames >= 1
-
-        for event in range(read_data_range + 1):
+        progress_proxy.update(startpoint)
+        for event in range(startpoint, read_data_range + 1):
             progress_proxy.update(1)
 
             currentSync = sync[event]
@@ -1210,6 +1232,8 @@ def _get_flim_data_frame_static(sync, tcspc, channel, special, header_variables,
             if not isPhoton:
                 # This is not needed once inside the first Frame marker
                 if special_event == FrameMarker:
+                    if countFrame > 0:
+                        return event, flim_data_stack_frame
                     insideFrame = True
                     currentLine = 0
                     counts += 1
@@ -1234,9 +1258,9 @@ def _get_flim_data_frame_static(sync, tcspc, channel, special, header_variables,
                 tmpchan = channel[event]
                 tmptcspc = tcspc[event]
                 if (currentPixel < num_pixel_X) and (tmptcspc < num_tcspc_channel):
-                    flim_data_stack[currentLine][currentPixel][tmpchan - 1][countFrame][tmptcspc] += 1
+                    flim_data_stack_frame[currentLine][currentPixel][tmpchan - 1][tmptcspc] += 1
 
-    return flim_data_stack
+    return -1, flim_data_stack_frame
 
 
 @njit
@@ -1390,9 +1414,15 @@ def _get_pt3_data_frame(sync, tcspc, chan, meta, is_raw=False):
             flim_data_dict, shape = _get_flim_data_raw_static(sync, tcspc, chan, special, header_variables, progress)
         return (flim_data_dict, shape)
     else:
-        with ProgressBar(total=len(sync)) as progress:
-            flim_data_stack = _get_flim_data_frame_static(sync, tcspc, chan, special, header_variables, progress)
-        print(flim_data_stack.shape)
+        shape = _get_flim_shape(sync, tcspc, chan, special, header_variables)
+        flim_data_stack = np.memmap('stack.tmp', shape=shape, mode='w+')
+        startpoint = 0
+        frame = 0
+        for frame in range(shape[3]):
+            with ProgressBar(total=len(sync)) as progress:
+                startpoint, flim_data_stack_frame = _get_flim_data_frame_static(sync, tcspc, chan, special, header_variables, progress, startpoint)
+                flim_data_stack[:, :, :, frame] = flim_data_stack_frame
+                flim_data_stack.flush()
         return flim_data_stack
 
 
@@ -1429,7 +1459,7 @@ def load_ptfile(filename, is_raw=False, gcs=False):
         sync, channel, tcspc, meta = _load_ptu(filename)
         flim_data = _get_ptu_data_frame(sync, tcspc, channel, meta, is_raw)
     elif ext == ".pt3":
-        sync, channel, tcspc, meta = _load_pt3(filename, gcs=False)
+        sync, channel, tcspc, meta = _load_pt3(filename, gcs=gcs)
         flim_data = _get_pt3_data_frame(sync, tcspc, channel, meta, is_raw)
     else:
         raise ValueError(f'format of {ext} is not supported!')
