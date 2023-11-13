@@ -201,7 +201,7 @@ def _load_ht3(filename, ovcfunc=None):
     return timestamps, detectors, nanotimes, meta
 
 
-def _load_pt3(filename, ovcfunc=None):
+def _load_pt3(filename, ovcfunc=None, gcs=False):
     """Load data from a PicoQuant .pt3 file.
 
     Arguments:
@@ -209,6 +209,7 @@ def _load_pt3(filename, ovcfunc=None):
         ovcfunc (function or None): function to use for overflow/rollover
             correction of timestamps. If None, it defaults to the
             fastest available implementation for the current machine.
+        gcp (bool): Whether file is from google cloud storage (alters header)
 
     Returns:
         A tuple of timestamps, detectors, nanotimes (integer arrays) and a
@@ -217,7 +218,7 @@ def _load_pt3(filename, ovcfunc=None):
     """
     assert os.path.isfile(filename), "File '%s' not found." % filename
 
-    t3records, timestamps_unit, nanotimes_unit, meta = _pt3_reader(filename)
+    t3records, timestamps_unit, nanotimes_unit, meta = _pt3_reader(filename, gcs)
     detectors, timestamps, nanotimes = _process_t3records(
         t3records, time_bit=16, dtime_bit=12, ch_bit=4, special_bit=False,
         ovcfunc=ovcfunc)
@@ -384,7 +385,7 @@ def _ht3_reader(filename):
         return t3records, timestamps_unit, nanotimes_unit, metadata
 
 
-def _pt3_reader(filename):
+def _pt3_reader(filename, gcs):
     """Load raw t3 records and metadata from a PT3 file.
     """
     with open(filename, 'rb') as f:
@@ -417,6 +418,9 @@ def _pt3_reader(filename):
             ('DispCountAxisFrom', 'int32'),
             ('DispCountAxisTo', 'int32'),
         ])
+        if gcs:
+            for _ in range(4):
+                f.readline()
         header = np.fromfile(f, dtype=header_dtype, count=1)
 
         if header['FormatVersion'][0] != b'2.0':
@@ -1412,10 +1416,11 @@ def plot_sequence_images(image_array):
     plt.show()
 
 
-def load_ptfile(filename, is_raw=False):
+def load_ptfile(filename, is_raw=False, gcs=False):
     '''Load a .ptu or .ptu into a numpy array
 
     :param filename: Name of file to load
+    :param gcs: Whether file is from google cloud storage (changes the header)
     :return flim_data_stack: numpyarray of size (num_pixel_Y, num_pixel_X, channels, num_of_frames, num_tcspc_channel)
     :return meta: metadata dictionary
     '''
@@ -1424,7 +1429,7 @@ def load_ptfile(filename, is_raw=False):
         sync, channel, tcspc, meta = _load_ptu(filename)
         flim_data = _get_ptu_data_frame(sync, tcspc, channel, meta, is_raw)
     elif ext == ".pt3":
-        sync, channel, tcspc, meta = _load_pt3(filename)
+        sync, channel, tcspc, meta = _load_pt3(filename, gcs)
         flim_data = _get_pt3_data_frame(sync, tcspc, channel, meta, is_raw)
     else:
         raise ValueError(f'format of {ext} is not supported!')
