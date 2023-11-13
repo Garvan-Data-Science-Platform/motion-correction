@@ -1429,7 +1429,7 @@ def load_ptfile(filename, is_raw=False, gcs=False):
         sync, channel, tcspc, meta = _load_ptu(filename)
         flim_data = _get_ptu_data_frame(sync, tcspc, channel, meta, is_raw)
     elif ext == ".pt3":
-        sync, channel, tcspc, meta = _load_pt3(filename, gcs)
+        sync, channel, tcspc, meta = _load_pt3(filename, gcs=False)
         flim_data = _get_pt3_data_frame(sync, tcspc, channel, meta, is_raw)
     else:
         raise ValueError(f'format of {ext} is not supported!')
