@@ -1394,7 +1394,7 @@ def _get_ptu_data_frame(sync, tcspc, chan, meta, is_raw=False):
         return flim_data_stack
 
 
-def _get_pt3_data_frame(sync, tcspc, chan, meta, is_raw=False):
+def _get_pt3_data_frame(sync, tcspc, chan, meta, is_raw=False, progress_cb=None):
     special = ((chan == 15) * 1) * (np.bitwise_and(tcspc, 15) * 1)  # special marker locations
     index = ((chan == 15) * 1) * ((np.bitwise_and(tcspc, 15) == 0) * 1)
 
@@ -1419,6 +1419,8 @@ def _get_pt3_data_frame(sync, tcspc, chan, meta, is_raw=False):
         startpoint = 0
         frame = 0
         for frame in range(shape[3]):
+            if progress_cb:
+                progress_cb(frame/shape[3])
             with ProgressBar(total=len(sync)) as progress:
                 startpoint, flim_data_stack_frame = _get_flim_data_frame_static(sync, tcspc, chan, special, header_variables, progress, startpoint)
                 flim_data_stack[:, :, :, frame] = flim_data_stack_frame
@@ -1446,11 +1448,12 @@ def plot_sequence_images(image_array):
     plt.show()
 
 
-def load_ptfile(filename, is_raw=False, gcs=False):
+def load_ptfile(filename, is_raw=False, gcs=False, progress_cb=None):
     '''Load a .ptu or .ptu into a numpy array
 
     :param filename: Name of file to load
     :param gcs: Whether file is from google cloud storage (changes the header)
+    :param progress_cb: Callback function which is called with progress as a value between 0 and 1
     :return flim_data_stack: numpyarray of size (num_pixel_Y, num_pixel_X, channels, num_of_frames, num_tcspc_channel)
     :return meta: metadata dictionary
     '''
@@ -1460,7 +1463,7 @@ def load_ptfile(filename, is_raw=False, gcs=False):
         flim_data = _get_ptu_data_frame(sync, tcspc, channel, meta, is_raw)
     elif ext == ".pt3":
         sync, channel, tcspc, meta = _load_pt3(filename, gcs=gcs)
-        flim_data = _get_pt3_data_frame(sync, tcspc, channel, meta, is_raw)
+        flim_data = _get_pt3_data_frame(sync, tcspc, channel, meta, is_raw, progress_cb)
     else:
         raise ValueError(f'format of {ext} is not supported!')
     return flim_data, meta
