@@ -1394,7 +1394,7 @@ def _get_ptu_data_frame(sync, tcspc, chan, meta, is_raw=False):
         return flim_data_stack
 
 
-def _get_pt3_data_frame(sync, tcspc, chan, meta, is_raw=False, progress_cb=None):
+def _get_pt3_data_frame(sync, tcspc, chan, meta, is_raw=False, progress_cb=None, destination_file=None):
     special = ((chan == 15) * 1) * (np.bitwise_and(tcspc, 15) * 1)  # special marker locations
     index = ((chan == 15) * 1) * ((np.bitwise_and(tcspc, 15) == 0) * 1)
 
@@ -1415,7 +1415,7 @@ def _get_pt3_data_frame(sync, tcspc, chan, meta, is_raw=False, progress_cb=None)
         return (flim_data_dict, shape)
     else:
         shape = _get_flim_shape(sync, tcspc, chan, special, header_variables)
-        flim_data_stack = np.memmap('stack.tmp', shape=shape, mode='w+')
+        flim_data_stack = np.memmap(destination_file or 'stack.tmp', shape=shape, mode='w+')
         startpoint = 0
         frame = 0
         for frame in range(shape[3]):
@@ -1448,12 +1448,13 @@ def plot_sequence_images(image_array):
     plt.show()
 
 
-def load_ptfile(filename, is_raw=False, gcs=False, progress_cb=None):
+def load_ptfile(filename, is_raw=False, gcs=False, progress_cb=None, destination_file=None):
     '''Load a .ptu or .ptu into a numpy array
 
     :param filename: Name of file to load
     :param gcs: Whether file is from google cloud storage (changes the header)
     :param progress_cb: Callback function which is called with progress as a value between 0 and 1
+    :param destination_file: file where resultant numpy array is saved
     :return flim_data_stack: numpyarray of size (num_pixel_Y, num_pixel_X, channels, num_of_frames, num_tcspc_channel)
     :return meta: metadata dictionary
     '''
@@ -1463,7 +1464,7 @@ def load_ptfile(filename, is_raw=False, gcs=False, progress_cb=None):
         flim_data = _get_ptu_data_frame(sync, tcspc, channel, meta, is_raw)
     elif ext == ".pt3":
         sync, channel, tcspc, meta = _load_pt3(filename, gcs=gcs)
-        flim_data = _get_pt3_data_frame(sync, tcspc, channel, meta, is_raw, progress_cb)
+        flim_data = _get_pt3_data_frame(sync, tcspc, channel, meta, is_raw, progress_cb, destination_file)
     else:
         raise ValueError(f'format of {ext} is not supported!')
     return flim_data, meta
