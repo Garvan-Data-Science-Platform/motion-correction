@@ -1416,7 +1416,7 @@ def _get_pt3_data_frame(sync, tcspc, chan, meta, is_raw=False, progress_cb=None,
     else:
         shape = _get_flim_shape(sync, tcspc, chan, special, header_variables)
 
-        flim_data_stack = np.memmap('stack.tmp', shape=shape, mode='w+')
+        flim_data_stack = np.memmap('stack.tmp', shape=shape, mode='w+',dtype=np.uint8)
         startpoint = 0
         frame = 0
         for frame in range(shape[3]):
@@ -1427,7 +1427,7 @@ def _get_pt3_data_frame(sync, tcspc, chan, meta, is_raw=False, progress_cb=None,
                 flim_data_stack[:, :, :, frame] = flim_data_stack_frame
                 flim_data_stack.flush()
         if destination_file:
-            new_file = np.lib.format.open_memmap(destination_file, mode='w+', shape=shape)
+            new_file = np.lib.format.open_memmap(destination_file, mode='w+', shape=shape,dtype=np.uint8)
             new_file[:] = flim_data_stack[:]
 
         return flim_data_stack

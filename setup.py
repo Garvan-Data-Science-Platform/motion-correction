@@ -55,6 +55,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/Garvan-Data-Science-Platformmotion_correction',
-    version='0.1.15',
+    version='0.1.16',
     zip_safe=False,
 )
