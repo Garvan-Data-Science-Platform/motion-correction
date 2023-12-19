@@ -69,7 +69,7 @@ _ptu_tag_type_r = {v: k for k, v in _ptu_tag_type.items()}
 _ptu_rec_type_r = {v: k for k, v in _ptu_rec_type.items()}
 
 
-def _load_ptu(filename, ovcfunc=None):
+def _load_ptu(filename, gcs=False,ovcfunc=None):
     """Load data from a PicoQuant .ptu file.
 
     Arguments:
@@ -91,7 +91,7 @@ def _load_ptu(filename, ovcfunc=None):
     """
     assert os.path.isfile(filename), "File '%s' not found." % filename
 
-    t3records, record_type, tags = _ptu_reader(filename)
+    t3records, record_type, tags = _ptu_reader(filename,gcs=gcs)
 
     if record_type == 'rtPicoHarpT3':
         detectors, timestamps, nanotimes = _process_t3records(
@@ -502,7 +502,7 @@ def _pt3_reader(filename, gcs):
         return t3records, timestamps_unit, nanotimes_unit, metadata
 
 
-def _ptu_reader(filename):
+def _ptu_reader(filename,gcs=False):
     """Read the header and the raw t3 or t2 records from a PTU file.
     """
     # All the info about the PTU format has been inferred from PicoQuant demo:
@@ -510,6 +510,9 @@ def _ptu_reader(filename):
 
     # Load only the first few bytes to see is file is valid
     with open(filename, 'rb') as f:
+        if gcs:
+            for _ in range(4):
+                f.readline()
         magic = f.read(8).rstrip(b'\0')
         version = f.read(8).rstrip(b'\0')
     if magic != b'PQTTTR':
@@ -1465,7 +1468,7 @@ def load_ptfile(filename, is_raw=False, gcs=False, progress_cb=None, destination
     '''
     name, ext = os.path.splitext(filename)
     if ext == ".ptu":
-        sync, channel, tcspc, meta = _load_ptu(filename)
+        sync, channel, tcspc, meta = _load_ptu(filename, gcs=gcs)
         flim_data = _get_ptu_data_frame(sync, tcspc, channel, meta, is_raw)
     elif ext == ".pt3":
         sync, channel, tcspc, meta = _load_pt3(filename, gcs=gcs)
