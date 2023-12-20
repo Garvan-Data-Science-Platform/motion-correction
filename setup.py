@@ -25,8 +25,11 @@ requirements = [
     "tqdm>=4.66",
     "scikit-image>=0.21",
     "sparse>=0.14.0",
-    "cupy-cuda11x",
 ]
+
+extras_require = {
+    "gpu":["cupy-cuda11x"]
+}
 
 test_requirements = ['pytest>=3', ]
 
@@ -55,6 +58,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/Garvan-Data-Science-Platformmotion_correction',
-    version='0.1.17',
+    version='0.1.18',
     zip_safe=False,
 )

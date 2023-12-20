@@ -521,6 +521,9 @@ def _ptu_reader(filename,gcs=False):
 
     # Now load the entire file
     with open(filename, 'rb') as f:
+        if gcs:
+            for _ in range(4):
+                f.readline()
         s = f.read()
     tags, offset = _read_header_tags(s)
 
@@ -1360,7 +1363,7 @@ def _get_flim_data_raw_static(sync, tcspc, channel, special, header_variables, p
     return data[:, :unique_idx], shape
 
 
-def _get_ptu_data_frame(sync, tcspc, chan, meta, is_raw=False):
+def _get_ptu_data_frame(sync, tcspc, chan, meta, is_raw=False,progress_cb=None, destination_file=None):
     # Check if it's FLIM image
     if meta['tags']["Measurement_SubMode"] == 0:
         raise IOError("This is not a FLIM PTU file.!!! \n")
@@ -1392,9 +1395,22 @@ def _get_ptu_data_frame(sync, tcspc, chan, meta, is_raw=False):
             flim_data_dict, shape = _get_flim_data_raw_static(sync, tcspc, chan, special, header_variables, progress)
         return (flim_data_dict, shape)
     else:
-        with ProgressBar(total=len(sync)) as progress:
-            flim_data_stack = _get_flim_data_frame_static(sync, tcspc, chan, special, header_variables, progress)
-        return flim_data_stack
+        shape = _get_flim_shape(sync, tcspc, chan, special, header_variables)
+        flim_data_stack = np.memmap('stack.tmp', shape=shape, mode='w+',dtype=np.uint8)
+        startpoint = 0
+        frame = 0
+        for frame in range(shape[3]):
+            if progress_cb:
+                progress_cb(frame/shape[3])
+            with ProgressBar(total=len(sync)) as progress:
+                startpoint, flim_data_stack_frame = _get_flim_data_frame_static(sync, tcspc, chan, special, header_variables, progress, startpoint)
+                flim_data_stack[:, :, :, frame] = flim_data_stack_frame
+                flim_data_stack.flush()
+        if destination_file:
+            new_file = np.lib.format.open_memmap(destination_file, mode='w+', shape=shape,dtype=np.uint8)
+            new_file[:] = flim_data_stack[:]
+
+    return flim_data_stack
 
 
 def _get_pt3_data_frame(sync, tcspc, chan, meta, is_raw=False, progress_cb=None, destination_file=None):
@@ -1469,7 +1485,7 @@ def load_ptfile(filename, is_raw=False, gcs=False, progress_cb=None, destination
     name, ext = os.path.splitext(filename)
     if ext == ".ptu":
         sync, channel, tcspc, meta = _load_ptu(filename, gcs=gcs)
-        flim_data = _get_ptu_data_frame(sync, tcspc, channel, meta, is_raw)
+        flim_data = _get_ptu_data_frame(sync, tcspc, channel, meta, is_raw, progress_cb, destination_file)
     elif ext == ".pt3":
         sync, channel, tcspc, meta = _load_pt3(filename, gcs=gcs)
         flim_data = _get_pt3_data_frame(sync, tcspc, channel, meta, is_raw, progress_cb, destination_file)

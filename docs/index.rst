@@ -16,6 +16,8 @@ To install motion_correction, run this command in your terminal:
 .. code-block:: console
 
     $ pip install motion_correction
+    #Or for GPU Support (not supported on mac)
+    $ pip install motion_correction[gpu]
 
 This is the preferred method to install motion_correction, as it will always install the most recent stable release.
 

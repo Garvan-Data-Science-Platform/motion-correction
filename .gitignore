@@ -112,3 +112,4 @@ Dockerfile
 
 save_dir
 working
+*.tmp
