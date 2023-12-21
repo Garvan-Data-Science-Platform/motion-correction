@@ -27,7 +27,7 @@ requirements = [
     "sparse>=0.14.0",
 ]
 
-extras_require = {
+extras = {
     "gpu":["cupy-cuda11x"]
 }
 
@@ -49,6 +49,7 @@ setup(
     ],
     description="Motion correction algorithms for FLIM data.",
     install_requires=requirements,
+    extras_require=extras,
     license="MIT license",
     long_description=readme + '\n\n' + history,
     include_package_data=True,
@@ -58,6 +59,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/Garvan-Data-Science-Platformmotion_correction',
-    version='0.1.18',
-    zip_safe=False,
+    version='0.1.19',
+    zip_safe=False
 )
