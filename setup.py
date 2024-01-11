@@ -17,13 +17,12 @@ requirements = [
     'opencv-python>=4.8',
     "torch>=2.0.1",
     "numpy==1.23.5",
-    "pyimof==1.0.0",
     "matplotlib==3.7.2",
     "image-registration==0.2.6",
     "pytest>=7.4",
     "dipy>=1.7.0",
     "tqdm>=4.66",
-    "scikit-image>=0.21",
+    "scikit-image==0.21",
     "sparse>=0.14.0",
 ]
 
@@ -59,6 +58,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/Garvan-Data-Science-Platformmotion_correction',
-    version='0.1.19',
+    version='0.1.20',
     zip_safe=False
 )

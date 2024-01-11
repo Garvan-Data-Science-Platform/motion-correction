@@ -8,8 +8,8 @@ from image_registration.fft_tools import shift
 from image_registration import chi2_shift
 from skimage.transform import warp
 from sys import platform
+from . import pyimof
 
-import pyimof
 import torch
 import cv2
 from numpy.typing import NDArray
