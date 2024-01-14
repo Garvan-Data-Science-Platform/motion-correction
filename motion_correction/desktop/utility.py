@@ -17,9 +17,13 @@ def ncc(patch1, patch2):
         return product
 
 
-def display_images(images: List[Union[str, np.ndarray]],
-                   rows: Optional[int] = None, cols: Optional[int] = None, colorbar=True,
-                   figsize: Tuple[int, int] = (12, 12)) -> None:
+def display_images(
+    images: List[Union[str, np.ndarray]],
+    rows: Optional[int] = None,
+    cols: Optional[int] = None,
+    colorbar=True,
+    figsize: Tuple[int, int] = (12, 12),
+) -> None:
     """
     Display a list of images in a grid layout using Matplotlib.
 
@@ -69,7 +73,7 @@ def display_images(images: List[Union[str, np.ndarray]],
             subfig = plt.imshow(img)
             if colorbar:
                 plt.colorbar(subfig, ax=axs, fraction=0.046, pad=0.04)
-            plt.axis('off')
+            plt.axis("off")
         else:
             print(f"Skipping image {i + 1} as it is not a valid image.")
 
@@ -77,7 +81,9 @@ def display_images(images: List[Union[str, np.ndarray]],
     plt.show()
 
 
-def plot_grids(u: np.ndarray, v: np.ndarray, ax: Optional[plt.Axes] = None, **kwargs) -> None:
+def plot_grids(
+    u: np.ndarray, v: np.ndarray, ax: Optional[plt.Axes] = None, **kwargs
+) -> None:
     """
     Plot grid lines on a Matplotlib Axes object.
 
@@ -91,7 +97,7 @@ def plot_grids(u: np.ndarray, v: np.ndarray, ax: Optional[plt.Axes] = None, **kw
     arrays u and v.
 
     """
-    
+
     ax = ax or plt.gca()
     segs1 = np.stack((u, v), axis=2)
     segs2 = segs1.transpose(1, 0, 2)
@@ -119,7 +125,9 @@ def plot_sequence_images(image_array):
         im.set_array(image_array[i])
         return (im,)
 
-    anim = animation.FuncAnimation(fig, animate, frames=len(image_array), interval=33, repeat_delay=1, repeat=True)
+    anim = animation.FuncAnimation(
+        fig, animate, frames=len(image_array), interval=33, repeat_delay=1, repeat=True
+    )
     display(HTML(anim.to_html5_video()))
     plt.close()
 
@@ -145,11 +153,15 @@ def save_sequence_images(file_path, image_array, fps=15):
         im.set_array(image_array[i])
         return (im,)
 
-    anim = animation.FuncAnimation(fig, animate, frames=len(image_array), interval=33, repeat_delay=1, repeat=False)
+    anim = animation.FuncAnimation(
+        fig, animate, frames=len(image_array), interval=33, repeat_delay=1, repeat=False
+    )
     #     Writer = animation.Writers['ffmpeg']
     writer = animation.FFMpegWriter(fps=fps, bitrate=2000)
     anim.save(file_path, writer)
     plt.close()
+
+
 #     anim.save(file_path, dpi=300, writer=PillowWriter(fps=25))
 
 

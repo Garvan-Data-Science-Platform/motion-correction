@@ -57,15 +57,15 @@ def _tvl1(I0, I1, u0, v0, dt, lambda_, tau, nwarp, niter, tol, prefilter):
     """
 
     nl, nc = I0.shape
-    y, x = np.meshgrid(np.arange(nl), np.arange(nc), indexing='ij')
+    y, x = np.meshgrid(np.arange(nl), np.arange(nc), indexing="ij")
 
-    f0 = lambda_*tau
+    f0 = lambda_ * tau
     tol *= I0.size
 
     u = u0.copy()
     v = v0.copy()
 
-    pu = np.zeros((I0.ndim, ) + I0.shape)
+    pu = np.zeros((I0.ndim,) + I0.shape)
     pv = np.zeros_like(pu)
     g = np.zeros_like(pu)
 
@@ -74,31 +74,30 @@ def _tvl1(I0, I1, u0, v0, dt, lambda_, tau, nwarp, niter, tol, prefilter):
             u = ndi.filters.median_filter(u, 3)
             v = ndi.filters.median_filter(v, 3)
 
-        wI1 = warp(I1, np.array([y+v, x+u]))
+        wI1 = warp(I1, np.array([y + v, x + u]))
         Iy, Ix = np.gradient(wI1)
-        NI = Ix*Ix + Iy*Iy
+        NI = Ix * Ix + Iy * Iy
         NI[NI == 0] = 1
 
-        rho_0 = wI1 - I0 - u0*Ix - v0*Iy
+        rho_0 = wI1 - I0 - u0 * Ix - v0 * Iy
 
         for __ in range(niter):
-
             # Data term
 
-            rho = rho_0 + u*Ix + v*Iy
+            rho = rho_0 + u * Ix + v * Iy
 
-            idx = abs(rho) <= f0*NI
+            idx = abs(rho) <= f0 * NI
 
             u_ = u
             v_ = v
 
-            u_[idx] -= rho[idx]*Ix[idx]/NI[idx]
-            v_[idx] -= rho[idx]*Iy[idx]/NI[idx]
+            u_[idx] -= rho[idx] * Ix[idx] / NI[idx]
+            v_[idx] -= rho[idx] * Iy[idx] / NI[idx]
 
             idx = ~idx
-            srho = f0*np.sign(rho[idx])
-            u_[idx] -= srho*Ix[idx]
-            v_[idx] -= srho*Iy[idx]
+            srho = f0 * np.sign(rho[idx])
+            u_[idx] -= srho * Ix[idx]
+            v_[idx] -= srho * Iy[idx]
 
             # Regularization term
 
@@ -107,7 +106,7 @@ def _tvl1(I0, I1, u0, v0, dt, lambda_, tau, nwarp, niter, tol, prefilter):
 
         u0 -= u
         v0 -= v
-        if (u0*u0+v0*v0).sum() < tol:
+        if (u0 * u0 + v0 * v0).sum() < tol:
             break
 
         u0, v0 = u, v
@@ -115,8 +114,9 @@ def _tvl1(I0, I1, u0, v0, dt, lambda_, tau, nwarp, niter, tol, prefilter):
     return u, v
 
 
-def tvl1(I0, I1, dt=0.2, lambda_=15, tau=0.3, nwarp=5, niter=10,
-         tol=1e-4, prefilter=False):
+def tvl1(
+    I0, I1, dt=0.2, lambda_=15, tau=0.3, nwarp=5, niter=10, tol=1e-4, prefilter=False
+):
     """Coarse to fine TV-L1 optical flow estimator. A popular algorithm
     intrudced by Zack et al. [1]_, improved in [2]_ and detailed in [3]_.
 
@@ -179,9 +179,16 @@ def tvl1(I0, I1, dt=0.2, lambda_=15, tau=0.3, nwarp=5, niter=10,
 
     """
 
-    solver = partial(_tvl1, dt=dt, lambda_=lambda_, tau=tau,
-                     nwarp=nwarp, niter=niter, tol=tol,
-                     prefilter=prefilter)
+    solver = partial(
+        _tvl1,
+        dt=dt,
+        lambda_=lambda_,
+        tau=tau,
+        nwarp=nwarp,
+        niter=niter,
+        tol=tol,
+        prefilter=prefilter,
+    )
 
     return coarse_to_fine(I0, I1, solver)
 
@@ -221,14 +228,14 @@ def _ilk(I0, I1, u0, v0, rad, nwarp, gaussian, prefilter):
     """
 
     nl, nc = I0.shape
-    y, x = np.meshgrid(np.arange(nl), np.arange(nc), indexing='ij')
+    y, x = np.meshgrid(np.arange(nl), np.arange(nc), indexing="ij")
 
-    size = 2*rad+1
+    size = 2 * rad + 1
 
     if gaussian:
-        filter_func = partial(ndi.gaussian_filter, sigma=size/4, mode='mirror')
+        filter_func = partial(ndi.gaussian_filter, sigma=size / 4, mode="mirror")
     else:
-        filter_func = partial(ndi.uniform_filter, size=size, mode='mirror')
+        filter_func = partial(ndi.uniform_filter, size=size, mode="mirror")
 
     u = u0.copy()
     v = v0.copy()
@@ -238,15 +245,15 @@ def _ilk(I0, I1, u0, v0, rad, nwarp, gaussian, prefilter):
             u = ndi.filters.median_filter(u, 3)
             v = ndi.filters.median_filter(v, 3)
 
-        wI1 = warp(I1, np.array([y+v, x+u]))
+        wI1 = warp(I1, np.array([y + v, x + u]))
         Iy, Ix = np.gradient(wI1)
-        It = wI1 - I0 - u*Ix - v*Iy
+        It = wI1 - I0 - u * Ix - v * Iy
 
-        J11 = Ix*Ix
-        J12 = Ix*Iy
-        J22 = Iy*Iy
-        J13 = Ix*It
-        J23 = Iy*It
+        J11 = Ix * Ix
+        J12 = Ix * Iy
+        J22 = Iy * Iy
+        J13 = Ix * It
+        J23 = Iy * It
 
         filter_func(J11, output=J11)
         filter_func(J12, output=J12)
@@ -254,12 +261,12 @@ def _ilk(I0, I1, u0, v0, rad, nwarp, gaussian, prefilter):
         filter_func(J13, output=J13)
         filter_func(J23, output=J23)
 
-        detA = -(J11*J22 - J12*J12)
+        detA = -(J11 * J22 - J12 * J12)
         idx = abs(detA) < 1e-14
         detA[idx] = 1
 
-        u = (J13*J22 - J12*J23)/detA
-        v = (J23*J11 - J12*J13)/detA
+        u = (J13 * J22 - J12 * J23) / detA
+        v = (J23 * J11 - J12 * J13) / detA
 
         u[idx] = 0
         v[idx] = 0
@@ -317,7 +324,6 @@ def ilk(I0, I1, rad=7, nwarp=10, gaussian=True, prefilter=False):
 
     """
 
-    solver = partial(_ilk, rad=rad, nwarp=nwarp, gaussian=gaussian,
-                     prefilter=prefilter)
+    solver = partial(_ilk, rad=rad, nwarp=nwarp, gaussian=gaussian, prefilter=prefilter)
 
     return coarse_to_fine(I0, I1, solver)

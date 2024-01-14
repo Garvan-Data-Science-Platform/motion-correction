@@ -12,17 +12,19 @@ import torch.nn.functional as F
 
 # This defines the API for the python package
 
-'''Data dimensions:
+"""Data dimensions:
 flim_data_stack: (width, height, n_channels, n_frames, n_nanotimes)
 intensity_data_stack: (width,height,n_frames)
-'''
+"""
 
 device = "cpu"
 if torch.cuda.is_available():
     device = "cuda:0"
     print("Using GPU")
 else:
-    print("No GPU detected, or CUDA toolkit not installed. https://developer.nvidia.com/cuda-downloads")
+    print(
+        "No GPU detected, or CUDA toolkit not installed. https://developer.nvidia.com/cuda-downloads"
+    )
 
 
 class Metric(TypedDict):
@@ -49,8 +51,7 @@ class CorrectionResults(TypedDict):
 
 
 def get_intensity_stack(
-    flim_data_stack: NDArray[np.uint8],
-    channel: int
+    flim_data_stack: NDArray[np.uint8], channel: int
 ) -> NDArray[np.uint8]:
     """Converts a FLIM data stack (output of pqreader) to a stack of intensity frames for a single channel
 
@@ -66,10 +67,10 @@ def get_intensity_stack(
 
 
 def calculate_correction(
-        intensity_data_stack: NDArray[np.uint8],
-        reference_frame: int = 0,
-        local_algorithm: _CorrectionAlgorithm | None = None,
-        global_algorithm: _CorrectionAlgorithm | None = None,
+    intensity_data_stack: NDArray[np.uint8],
+    reference_frame: int = 0,
+    local_algorithm: _CorrectionAlgorithm | None = None,
+    global_algorithm: _CorrectionAlgorithm | None = None,
 ) -> CorrectionResults:
     """Calculates motion correction for given intensity data stack based on chosen algorithms
 
@@ -104,11 +105,11 @@ def calculate_correction(
     ref_frame = intensity_data_stack[:, :, reference_frame]
     num_frames = intensity_data_stack.shape[2]
     metrics = {}
-    for metric in ["ncc", 'mse', 'nrm', 'ssi']:
+    for metric in ["ncc", "mse", "nrm", "ssi"]:
         metrics[metric] = {
-            'original': np.zeros((num_frames,), dtype=np.float32),
-            'corrected': np.zeros((num_frames,), dtype=np.float32),
-            'global_corrected': np.zeros((num_frames,), dtype=np.float32)
+            "original": np.zeros((num_frames,), dtype=np.float32),
+            "corrected": np.zeros((num_frames,), dtype=np.float32),
+            "global_corrected": np.zeros((num_frames,), dtype=np.float32),
         }
     print("LOCAL", local_algorithm)
     for i in (pbar := tqdm(range(num_frames))):
@@ -119,40 +120,77 @@ def calculate_correction(
 
         tst_frame = intensity_data_stack[:, :, i]
         if global_algorithm:
-            assert global_algorithm.algorithm_type == 'global'
-            aligned, frame_transform_global = global_algorithm.align(ref_frame, tst_frame)
+            assert global_algorithm.algorithm_type == "global"
+            aligned, frame_transform_global = global_algorithm.align(
+                ref_frame, tst_frame
+            )
         else:
-            aligned, frame_transform_global = tst_frame, np.zeros_like(tst_frame, dtype=np.float32)
+            aligned, frame_transform_global = tst_frame, np.zeros_like(
+                tst_frame, dtype=np.float32
+            )
 
         intensity_data_stack_global_corrected[:, :, i] = aligned
 
         if local_algorithm:
             assert local_algorithm.algorithm_type == "local"
-            intensity_data_stack_corrected[:, :, i], frame_transform_local = local_algorithm.align(ref_frame, aligned)
+            (
+                intensity_data_stack_corrected[:, :, i],
+                frame_transform_local,
+            ) = local_algorithm.align(ref_frame, aligned)
         else:
-            intensity_data_stack_corrected[:, :, i], frame_transform_local = aligned, np.zeros_like(tst_frame, dtype=np.float32)
+            (
+                intensity_data_stack_corrected[:, :, i],
+                frame_transform_local,
+            ) = aligned, np.zeros_like(tst_frame, dtype=np.float32)
 
-        metrics['ncc']['original'][i] = _ncc(ref_frame, intensity_data_stack[:, :, i])
-        metrics['ncc']['corrected'][i] = _ncc(ref_frame, intensity_data_stack_corrected[:, :, i])
-        metrics['ncc']['global_corrected'][i] = _ncc(ref_frame, intensity_data_stack_global_corrected[:, :, i])
+        metrics["ncc"]["original"][i] = _ncc(ref_frame, intensity_data_stack[:, :, i])
+        metrics["ncc"]["corrected"][i] = _ncc(
+            ref_frame, intensity_data_stack_corrected[:, :, i]
+        )
+        metrics["ncc"]["global_corrected"][i] = _ncc(
+            ref_frame, intensity_data_stack_global_corrected[:, :, i]
+        )
 
-        metrics['mse']['original'][i] = skm.mean_squared_error(ref_frame, intensity_data_stack[:, :, i])
-        metrics['mse']['corrected'][i] = skm.mean_squared_error(ref_frame, intensity_data_stack_corrected[:, :, i])
-        metrics['mse']['global_corrected'][i] = skm.mean_squared_error(ref_frame, intensity_data_stack_global_corrected[:, :, i])
+        metrics["mse"]["original"][i] = skm.mean_squared_error(
+            ref_frame, intensity_data_stack[:, :, i]
+        )
+        metrics["mse"]["corrected"][i] = skm.mean_squared_error(
+            ref_frame, intensity_data_stack_corrected[:, :, i]
+        )
+        metrics["mse"]["global_corrected"][i] = skm.mean_squared_error(
+            ref_frame, intensity_data_stack_global_corrected[:, :, i]
+        )
 
-        metrics['nrm']['original'][i] = skm.normalized_root_mse(ref_frame, intensity_data_stack[:, :, i])
-        metrics['nrm']['corrected'][i] = skm.normalized_root_mse(ref_frame, intensity_data_stack_corrected[:, :, i])
-        metrics['nrm']['global_corrected'][i] = skm.normalized_root_mse(ref_frame, intensity_data_stack_global_corrected[:, :, i])
+        metrics["nrm"]["original"][i] = skm.normalized_root_mse(
+            ref_frame, intensity_data_stack[:, :, i]
+        )
+        metrics["nrm"]["corrected"][i] = skm.normalized_root_mse(
+            ref_frame, intensity_data_stack_corrected[:, :, i]
+        )
+        metrics["nrm"]["global_corrected"][i] = skm.normalized_root_mse(
+            ref_frame, intensity_data_stack_global_corrected[:, :, i]
+        )
 
         def norm2uint8(data):
-            return ((data - data.min()) / (data.max() - data.min()) * 255).astype(np.uint8)
+            return ((data - data.min()) / (data.max() - data.min()) * 255).astype(
+                np.uint8
+            )
 
-        metrics['ssi']['original'][i] = skm.structural_similarity(
-            norm2uint8(ref_frame), norm2uint8(intensity_data_stack[:, :, i]), data_range=255)
-        metrics['ssi']['corrected'][i] = skm.structural_similarity(
-            norm2uint8(ref_frame), norm2uint8(intensity_data_stack_corrected[:, :, i]), data_range=255)
-        metrics['ssi']['global_corrected'][i] = skm.structural_similarity(
-            norm2uint8(ref_frame), norm2uint8(intensity_data_stack_global_corrected[:, :, i]), data_range=255)
+        metrics["ssi"]["original"][i] = skm.structural_similarity(
+            norm2uint8(ref_frame),
+            norm2uint8(intensity_data_stack[:, :, i]),
+            data_range=255,
+        )
+        metrics["ssi"]["corrected"][i] = skm.structural_similarity(
+            norm2uint8(ref_frame),
+            norm2uint8(intensity_data_stack_corrected[:, :, i]),
+            data_range=255,
+        )
+        metrics["ssi"]["global_corrected"][i] = skm.structural_similarity(
+            norm2uint8(ref_frame),
+            norm2uint8(intensity_data_stack_global_corrected[:, :, i]),
+            data_range=255,
+        )
 
         local_transforms[:, :, :, i] = frame_transform_local
         global_transforms[:, :, :, i] = frame_transform_global
@@ -160,13 +198,12 @@ def calculate_correction(
     combined_transforms = local_transforms + global_transforms
 
     correction_results = {
-        'global_corrected_intensity_data_stack': intensity_data_stack_global_corrected,
-        'corrected_intensity_data_stack': intensity_data_stack_corrected,
-        'metrics': metrics,
-        'combined_transforms': combined_transforms,
-        'local_transforms': local_transforms,
-        'global_transforms': global_transforms
-
+        "global_corrected_intensity_data_stack": intensity_data_stack_global_corrected,
+        "corrected_intensity_data_stack": intensity_data_stack_corrected,
+        "metrics": metrics,
+        "combined_transforms": combined_transforms,
+        "local_transforms": local_transforms,
+        "global_transforms": global_transforms,
     }
 
     return correction_results
@@ -176,7 +213,7 @@ def apply_correction_flim(
     flim_data_stack: NDArray[np.uint8],
     transform_matrix: NDArray[np.float64],
     exclude: list[int] | None = None,
-    delete: bool = False
+    delete: bool = False,
 ):
     """Applies a transformation matrix to a flim data stack
 
@@ -206,10 +243,14 @@ def apply_correction_flim(
             frame = flim_data_stack[:, :, ch, frame_idx, :].astype(np.float32)
             flow = transform_matrix[:, :, :, frame_idx]
             warped, warped_int = _flow_warp(frame, flow)  # Z x H x W
-            corrected_flim_data_stack[:, :, ch, frame_idx, :] = np.moveaxis(warped_int.astype(np.uint8), [0, 1, 2], [2, 0, 1])
+            corrected_flim_data_stack[:, :, ch, frame_idx, :] = np.moveaxis(
+                warped_int.astype(np.uint8), [0, 1, 2], [2, 0, 1]
+            )
 
     if exclude:
-        corrected_flim_data_stack = np.delete(corrected_flim_data_stack, exclude, axis=3)
+        corrected_flim_data_stack = np.delete(
+            corrected_flim_data_stack, exclude, axis=3
+        )
 
     return corrected_flim_data_stack
     # return transformed_flim_data_stack
@@ -246,23 +287,35 @@ def _ncc(patch1, patch2):
         return product
 
 
-def _flow_warp(frame, flow, padding_mode='reflection'):
+def _flow_warp(frame, flow, padding_mode="reflection"):
     # frame: H x W x C, flow: 2 (y, x) x H x W
     rows, cols = frame.shape[0], frame.shape[1]
-    col_coords, row_coords = np.meshgrid(np.arange(rows), np.arange(cols), indexing='xy')
+    col_coords, row_coords = np.meshgrid(
+        np.arange(rows), np.arange(cols), indexing="xy"
+    )
     assert frame.shape[:2] == flow.shape[-2:]
 
-    frame_tensor = torch.tensor(frame).permute(2, 0, 1).unsqueeze(0).float().to(device)  # 1 x C x H x W
+    frame_tensor = (
+        torch.tensor(frame).permute(2, 0, 1).unsqueeze(0).float().to(device)
+    )  # 1 x C x H x W
 
-    grid = np.array([col_coords + flow[1, :, :], row_coords + flow[0, :, :]], dtype=np.float32)
-    grid[0, :, :] = 2.0 * grid[0, :, :] / (cols-1) - 1.0
-    grid[1, :, :] = 2.0 * grid[1, :, :] / (rows-1) - 1.0
-    grid_tensor = torch.tensor(grid).permute(1, 2, 0).unsqueeze(0).float().to(device)   # 1 x H x W x 2 (x, y)
+    grid = np.array(
+        [col_coords + flow[1, :, :], row_coords + flow[0, :, :]], dtype=np.float32
+    )
+    grid[0, :, :] = 2.0 * grid[0, :, :] / (cols - 1) - 1.0
+    grid[1, :, :] = 2.0 * grid[1, :, :] / (rows - 1) - 1.0
+    grid_tensor = (
+        torch.tensor(grid).permute(1, 2, 0).unsqueeze(0).float().to(device)
+    )  # 1 x H x W x 2 (x, y)
 
-    warped = F.grid_sample(frame_tensor, grid_tensor, padding_mode=padding_mode, align_corners=True)
+    warped = F.grid_sample(
+        frame_tensor, grid_tensor, padding_mode=padding_mode, align_corners=True
+    )
     # warped_int = cascade_round_tensor_hist(warped.squeeze(0).permute((1, 2, 0))).permute((2, 0, 1)).unsqueeze(0)
     warped_int = _cascade_round_tensor(warped)
-    return torch.squeeze(warped).cpu().numpy(), torch.squeeze(warped_int).cpu().numpy().astype(np.uint16)
+    return torch.squeeze(warped).cpu().numpy(), torch.squeeze(
+        warped_int
+    ).cpu().numpy().astype(np.uint16)
 
     # warped = cascade_round_tensor(
     #     F.grid_sample(frame_tensor, grid_tensor, padding_mode=padding_mode, align_corners=True))
@@ -274,7 +327,10 @@ def _cascade_round_tensor(tensor):
     lwr_tsr = tensor.floor()
     lwr_sum = lwr_tsr.sum(axis=0, keepdims=True)
     count_tensor = tsr_sum - lwr_sum
-    random_mask = torch.rand(*tensor.shape, device=tensor.device) * tensor.shape[0] <= count_tensor
+    random_mask = (
+        torch.rand(*tensor.shape, device=tensor.device) * tensor.shape[0]
+        <= count_tensor
+    )
 
     return (lwr_tsr + random_mask).int()
 
@@ -296,7 +352,9 @@ def _hist_laxis_tensor(data, n_bins, range_limits):
     # We need to use bincount to get bin based counts. To have unique IDs for
     # each row and not get confused by the ones from other rows, we need to
     # offset each row by a scale (using row length for this).
-    scaled_idx = n_bins * torch.arange(data2D.shape[0]).unsqueeze(1).to(data.device) + idx
+    scaled_idx = (
+        n_bins * torch.arange(data2D.shape[0]).unsqueeze(1).to(data.device) + idx
+    )
 
     # Set the bad ones to be last possible index+1 : n_bins*data2D.shape[0]
     limit = n_bins * data2D.shape[0]
@@ -319,10 +377,14 @@ def _cascade_round_tensor_hist(tensor, num_bins=50):
     # Estimate histogram
     residuals = array - flr_arr
     hist = _hist_laxis_tensor(residuals, n_bins=num_bins, range_limits=(0, 1))
-    cum_sum = hist.flip(dims=[-1, ]).cumsum(dim=-1)
+    cum_sum = hist.flip(
+        dims=[
+            -1,
+        ]
+    ).cumsum(dim=-1)
 
     indices = torch.argmax((cum_sum > dif_sum).int(), dim=-1)
-    bins = torch.linspace(0, 1, num_bins + 1, device='cuda')
+    bins = torch.linspace(0, 1, num_bins + 1, device="cuda")
     thresholds = bins[num_bins - indices.flatten()].reshape((rows, cols, 1))
     random_mask = residuals > thresholds
 

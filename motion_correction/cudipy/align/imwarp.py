@@ -13,14 +13,16 @@ from ..align import vector_fields as vfu
 from ..align.scalespace import ScaleSpace
 from dipy.align import Bunch, VerbosityLevels
 
-RegistrationStages = Bunch(INIT_START=0,
-                           INIT_END=1,
-                           OPT_START=2,
-                           OPT_END=3,
-                           SCALE_START=4,
-                           SCALE_END=5,
-                           ITER_START=6,
-                           ITER_END=7)
+RegistrationStages = Bunch(
+    INIT_START=0,
+    INIT_END=1,
+    OPT_START=2,
+    OPT_END=3,
+    SCALE_START=4,
+    SCALE_END=5,
+    ITER_START=6,
+    ITER_END=7,
+)
 """Registration Stages
 
 This enum defines the different stages which the Volumetric Registration
@@ -103,18 +105,20 @@ def get_direction_and_spacings(affine, dim):
 
 
 class DiffeomorphicMap(object):
-    def __init__(self,
-                 dim,
-                 disp_shape,
-                 disp_grid2world=None,
-                 domain_shape=None,
-                 domain_grid2world=None,
-                 codomain_shape=None,
-                 codomain_grid2world=None,
-                 prealign=None,
-                 *,
-                 coord_axis=-1):
-        """ DiffeomorphicMap
+    def __init__(
+        self,
+        dim,
+        disp_shape,
+        disp_grid2world=None,
+        domain_shape=None,
+        domain_grid2world=None,
+        codomain_shape=None,
+        codomain_grid2world=None,
+        prealign=None,
+        *,
+        coord_axis=-1
+    ):
+        """DiffeomorphicMap
 
         Implements a diffeomorphic transformation on the physical space. The
         deformation fields encoding the direct and inverse transformations
@@ -158,7 +162,7 @@ class DiffeomorphicMap(object):
 
         self.dim = dim
 
-        if (disp_shape is None):
+        if disp_shape is None:
             raise ValueError("Invalid displacement field discretization")
 
         self.disp_shape = np.asarray(disp_shape, dtype=np.int32)
@@ -222,7 +226,7 @@ class DiffeomorphicMap(object):
         self.coord_axis = coord_axis
 
     def interpret_matrix(self, obj):
-        """ Try to interpret `obj` as a matrix
+        """Try to interpret `obj` as a matrix
 
         Some operations are performed faster if we know in advance if a matrix
         is the identity (so we can skip the actual matrix-vector
@@ -245,9 +249,9 @@ class DiffeomorphicMap(object):
             obj, (cp.ndarray, np.ndarray)
         ):  # TODO: allow both CuPy and NumPy?
             return obj
-        if isinstance(obj, str) and (obj == 'identity'):
+        if isinstance(obj, str) and (obj == "identity"):
             return None
-        raise ValueError('Invalid matrix')
+        raise ValueError("Invalid matrix")
 
     def get_forward_field(self):
         """Deformation field to transform an image in the forward direction
@@ -285,9 +289,14 @@ class DiffeomorphicMap(object):
         self.forward = cp.zeros(shape, dtype=floating)
         self.backward = cp.zeros(shape, dtype=floating)
 
-    def _warp_forward(self, image, interpolation='linear',
-                      image_world2grid=None, out_shape=None,
-                      out_grid2world=None):
+    def _warp_forward(
+        self,
+        image,
+        interpolation="linear",
+        image_world2grid=None,
+        out_shape=None,
+        out_grid2world=None,
+    ):
         """Warps an image in the forward direction
 
         Deforms the input image under this diffeomorphic map in the forward
@@ -354,8 +363,9 @@ class DiffeomorphicMap(object):
         # if no sampling info is provided, we use the domain info
         if out_shape is None:
             if self.domain_shape is None:
-                raise ValueError('Unable to infer sampling info. '
-                                 'Provide a valid out_shape.')
+                raise ValueError(
+                    "Unable to infer sampling info. " "Provide a valid out_shape."
+                )
             out_shape = self.domain_shape
         else:
             out_shape = cp.asarray(out_shape, dtype=np.int32)
@@ -382,13 +392,13 @@ class DiffeomorphicMap(object):
         affine_disp = W
 
         # Convert the data to required types to use the cythonized functions
-        if interpolation == 'nearest':
-            if image.dtype is cp.dtype('float64') and floating is cp.float32:
+        if interpolation == "nearest":
+            if image.dtype is cp.dtype("float64") and floating is cp.float32:
                 image = image.astype(floating)
-            elif image.dtype is cp.dtype('int64'):
+            elif image.dtype is cp.dtype("int64"):
                 image = image.astype(cp.int32)
             order = 0
-        elif interpolation == 'cubic':
+        elif interpolation == "cubic":
             image = cp.asarray(image, dtype=floating)
             order = 3
         else:
@@ -407,9 +417,14 @@ class DiffeomorphicMap(object):
         )
         return warped
 
-    def _warp_backward(self, image, interpolation='linear',
-                       image_world2grid=None, out_shape=None,
-                       out_grid2world=None):
+    def _warp_backward(
+        self,
+        image,
+        interpolation="linear",
+        image_world2grid=None,
+        out_shape=None,
+        out_grid2world=None,
+    ):
         """Warps an image in the backward direction
 
         Deforms the input image under this diffeomorphic map in the backward
@@ -479,7 +494,7 @@ class DiffeomorphicMap(object):
         # if no sampling info is provided, we use the codomain info
         if out_shape is None:
             if self.codomain_shape is None:
-                msg = 'Unknown sampling info. Provide a valid out_shape.'
+                msg = "Unknown sampling info. Provide a valid out_shape."
                 raise ValueError(msg)
             out_shape = self.codomain_shape
         if out_grid2world is None:
@@ -504,13 +519,13 @@ class DiffeomorphicMap(object):
         # prior to adding to the transformed input point
         affine_disp = mult_aff(W, Pinv)
 
-        if interpolation == 'nearest':
-            if image.dtype is cp.dtype('float64') and floating is cp.float32:
+        if interpolation == "nearest":
+            if image.dtype is cp.dtype("float64") and floating is cp.float32:
                 image = image.astype(floating)
-            elif image.dtype is cp.dtype('int64'):
+            elif image.dtype is cp.dtype("int64"):
                 image = image.astype(cp.int32)
             order = 0
-        elif interpolation == 'cubic':
+        elif interpolation == "cubic":
             image = cp.asarray(image, dtype=floating)
             order = 3
         else:
@@ -530,8 +545,14 @@ class DiffeomorphicMap(object):
 
         return warped
 
-    def transform(self, image, interpolation='linear', image_world2grid=None,
-                  out_shape=None, out_grid2world=None):
+    def transform(
+        self,
+        image,
+        interpolation="linear",
+        image_world2grid=None,
+        out_shape=None,
+        out_grid2world=None,
+    ):
         """Warps an image in the forward direction
 
         Transforms the input image under this transformation in the forward
@@ -568,17 +589,23 @@ class DiffeomorphicMap(object):
         if out_shape is not None:
             out_shape = np.asarray(out_shape, dtype=np.int32)
         if self.is_inverse:
-            warped = self._warp_backward(image, interpolation,
-                                         image_world2grid, out_shape,
-                                         out_grid2world)
+            warped = self._warp_backward(
+                image, interpolation, image_world2grid, out_shape, out_grid2world
+            )
         else:
-            warped = self._warp_forward(image, interpolation, image_world2grid,
-                                        out_shape, out_grid2world)
+            warped = self._warp_forward(
+                image, interpolation, image_world2grid, out_shape, out_grid2world
+            )
         return warped
 
-    def transform_inverse(self, image, interpolation='linear',
-                          image_world2grid=None, out_shape=None,
-                          out_grid2world=None):
+    def transform_inverse(
+        self,
+        image,
+        interpolation="linear",
+        image_world2grid=None,
+        out_shape=None,
+        out_grid2world=None,
+    ):
         """Warps an image in the backward direction
 
         Transforms the input image under this transformation in the backward
@@ -613,12 +640,13 @@ class DiffeomorphicMap(object):
         information.
         """
         if self.is_inverse:
-            warped = self._warp_forward(image, interpolation, image_world2grid,
-                                        out_shape, out_grid2world)
+            warped = self._warp_forward(
+                image, interpolation, image_world2grid, out_shape, out_grid2world
+            )
         else:
-            warped = self._warp_backward(image, interpolation,
-                                         image_world2grid, out_shape,
-                                         out_grid2world)
+            warped = self._warp_backward(
+                image, interpolation, image_world2grid, out_shape, out_grid2world
+            )
         return warped
 
     def inverse(self):
@@ -674,9 +702,7 @@ class DiffeomorphicMap(object):
         )
 
         expand_factors = np.append(expand_factors, [1])
-        expanded_grid2world = mult_aff(
-            self.disp_grid2world, np.diag(expand_factors)
-        )
+        expanded_grid2world = mult_aff(self.disp_grid2world, np.diag(expand_factors))
         expanded_world2grid = linalg.inv(expanded_grid2world)
         self.forward = expanded_forward
         self.backward = expanded_backward
@@ -806,7 +832,10 @@ class DiffeomorphicMap(object):
             omit_stats=True,
             coord_axis=self.coord_axis,
         )
-        backward, stats, = compose_f(
+        (
+            backward,
+            stats,
+        ) = compose_f(
             d2_inv,
             d1_inv,
             None,
@@ -823,7 +852,7 @@ class DiffeomorphicMap(object):
         return composition
 
     def get_simplified_transform(self):
-        """ Constructs a simplified version of this Diffeomorhic Map
+        """Constructs a simplified version of this Diffeomorhic Map
 
         The simplified version incorporates the pre-align transform, as well as
         the domain and codomain affine transforms into the displacement field.
@@ -897,7 +926,7 @@ class DiffeomorphicMap(object):
 
 class DiffeomorphicRegistration(object, metaclass=abc.ABCMeta):
     def __init__(self, metric=None):
-        """ Diffeomorphic Registration
+        """Diffeomorphic Registration
 
         This abstract class defines the interface to be implemented by any
         optimization algorithm for diffeomorphic registration.
@@ -910,7 +939,7 @@ class DiffeomorphicRegistration(object, metaclass=abc.ABCMeta):
             similarity.
         """
         if metric is None:
-            raise ValueError('The metric cannot be None')
+            raise ValueError("The metric cannot be None")
         self.metric = metric
         self.dim = metric.dim
 
@@ -955,18 +984,20 @@ _norm_div = cp.ElementwiseKernel(
 
 
 class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
-    def __init__(self,
-                 metric,
-                 level_iters=None,
-                 step_length=0.25,
-                 ss_sigma_factor=0.2,
-                 opt_tol=1e-5,
-                 inv_iter=20,
-                 inv_tol=1e-3,
-                 callback=None,
-                 *,
-                 coord_axis=-1):
-        """ Symmetric Diffeomorphic Registration (SyN) Algorithm
+    def __init__(
+        self,
+        metric,
+        level_iters=None,
+        step_length=0.25,
+        ss_sigma_factor=0.2,
+        opt_tol=1e-5,
+        inv_iter=20,
+        inv_tol=1e-3,
+        callback=None,
+        *,
+        coord_axis=-1
+    ):
+        """Symmetric Diffeomorphic Registration (SyN) Algorithm
 
         Performs the multi-resolution optimization algorithm for non-linear
         registration using a given similarity metric.
@@ -1005,7 +1036,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             level_iters = [100, 100, 25]
 
         if len(level_iters) == 0:
-            raise ValueError('The iterations list cannot be empty')
+            raise ValueError("The iterations list cannot be empty")
 
         self.set_level_iters(level_iters)
         self.step_length = step_length
@@ -1025,8 +1056,9 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.mask0 = metric.mask0
         self.coord_axis = coord_axis
 
-    def update(self, current_displacement, new_displacement,
-               disp_world2grid, time_scaling):
+    def update(
+        self, current_displacement, new_displacement, disp_world2grid, time_scaling
+    ):
         """Composition of the current displacement field with the given field
 
         Interpolates new displacement at the locations defined by
@@ -1065,9 +1097,16 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         # grid2world transform, which implies premult_index=Identity
         # and premult_disp is the world2grid transform associated with
         # the displacements' grid
-        self.compose(current_displacement, new_displacement, None,
-                     disp_world2grid, time_scaling, current_displacement,
-                     omit_stats=True, coord_axis=self.coord_axis)
+        self.compose(
+            current_displacement,
+            new_displacement,
+            None,
+            disp_world2grid,
+            time_scaling,
+            current_displacement,
+            omit_stats=True,
+            coord_axis=self.coord_axis,
+        )
 
         return current_displacement, mean_norm
 
@@ -1092,8 +1131,9 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.invert_vector_field = vfu.invert_vector_field_fixed_point_3d
             self.compose = vfu.compose_vector_fields_3d
 
-    def _init_optimizer(self, static, moving,
-                        static_grid2world, moving_grid2world, prealign):
+    def _init_optimizer(
+        self, static, moving, static_grid2world, moving_grid2world, prealign
+    ):
         """Initializes the registration optimizer
 
         Initializes the optimizer by computing the scale space of the input
@@ -1126,45 +1166,59 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.invert_vector_field = vfu.invert_vector_field_fixed_point
         self.compose = vfu.compose_vector_fields
         # Extract information from affine matrices to create the scale space
-        static_direction, static_spacing = \
-            get_direction_and_spacings(static_grid2world, self.dim)
-        moving_direction, moving_spacing = \
-            get_direction_and_spacings(moving_grid2world, self.dim)
+        static_direction, static_spacing = get_direction_and_spacings(
+            static_grid2world, self.dim
+        )
+        moving_direction, moving_spacing = get_direction_and_spacings(
+            moving_grid2world, self.dim
+        )
 
         # the images' directions don't change with scale
         self.static_direction = np.eye(self.dim + 1)
         self.moving_direction = np.eye(self.dim + 1)
-        self.static_direction[:self.dim, :self.dim] = static_direction
-        self.moving_direction[:self.dim, :self.dim] = moving_direction
+        self.static_direction[: self.dim, : self.dim] = static_direction
+        self.moving_direction[: self.dim, : self.dim] = moving_direction
 
         # Build the scale space of the input images
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
-            logger.info('Applying zero mask: ' + str(self.mask0))
+            logger.info("Applying zero mask: " + str(self.mask0))
 
         if self.verbosity >= VerbosityLevels.STATUS:
-            logger.info('Creating scale space from the moving image.'
-                        + ' Levels: %d. Sigma factor: %f.' %
-                        (self.levels, self.ss_sigma_factor))
+            logger.info(
+                "Creating scale space from the moving image."
+                + " Levels: %d. Sigma factor: %f." % (self.levels, self.ss_sigma_factor)
+            )
 
-        self.moving_ss = ScaleSpace(moving, self.levels, moving_grid2world,
-                                    moving_spacing, self.ss_sigma_factor,
-                                    self.mask0)
+        self.moving_ss = ScaleSpace(
+            moving,
+            self.levels,
+            moving_grid2world,
+            moving_spacing,
+            self.ss_sigma_factor,
+            self.mask0,
+        )
 
         if self.verbosity >= VerbosityLevels.STATUS:
-            logger.info('Creating scale space from the static image.'
-                        + ' Levels: %d. Sigma factor: %f.' %
-                        (self.levels, self.ss_sigma_factor))
+            logger.info(
+                "Creating scale space from the static image."
+                + " Levels: %d. Sigma factor: %f." % (self.levels, self.ss_sigma_factor)
+            )
 
-        self.static_ss = ScaleSpace(static, self.levels, static_grid2world,
-                                    static_spacing, self.ss_sigma_factor,
-                                    self.mask0)
+        self.static_ss = ScaleSpace(
+            static,
+            self.levels,
+            static_grid2world,
+            static_spacing,
+            self.ss_sigma_factor,
+            self.mask0,
+        )
 
         if self.verbosity >= VerbosityLevels.DEBUG:
-            logger.info('Moving scale space:')
+            logger.info("Moving scale space:")
             for level in range(self.levels):
                 self.moving_ss.print_level(level)
 
-            logger.info('Static scale space:')
+            logger.info("Static scale space:")
             for level in range(self.levels):
                 self.static_ss.print_level(level)
 
@@ -1184,15 +1238,17 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         # as the reference, we don't need to pre-align.
         domain_shape = static.shape
         domain_grid2world = static_grid2world
-        self.static_to_ref = DiffeomorphicMap(self.dim,
-                                              disp_shape,
-                                              disp_grid2world,
-                                              domain_shape,
-                                              domain_grid2world,
-                                              codomain_shape,
-                                              codomain_grid2world,
-                                              None,
-                                              coord_axis=self.coord_axis)
+        self.static_to_ref = DiffeomorphicMap(
+            self.dim,
+            disp_shape,
+            disp_grid2world,
+            domain_shape,
+            domain_grid2world,
+            codomain_shape,
+            codomain_grid2world,
+            None,
+            coord_axis=self.coord_axis,
+        )
         self.static_to_ref.allocate()
 
         # The backward model transforms points from the moving image
@@ -1207,20 +1263,21 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         prealign_inv = None if prealign is None else linalg.inv(prealign)
         domain_shape = moving.shape
         domain_grid2world = moving_grid2world
-        self.moving_to_ref = DiffeomorphicMap(self.dim,
-                                              disp_shape,
-                                              disp_grid2world,
-                                              domain_shape,
-                                              domain_grid2world,
-                                              codomain_shape,
-                                              codomain_grid2world,
-                                              prealign_inv,
-                                              coord_axis=self.coord_axis)
+        self.moving_to_ref = DiffeomorphicMap(
+            self.dim,
+            disp_shape,
+            disp_grid2world,
+            domain_shape,
+            domain_grid2world,
+            codomain_shape,
+            codomain_grid2world,
+            prealign_inv,
+            coord_axis=self.coord_axis,
+        )
         self.moving_to_ref.allocate()
 
     def _end_optimizer(self):
-        """Frees the resources allocated during initialization
-        """
+        """Frees the resources allocated during initialization"""
         del self.moving_ss
         del self.static_ss
 
@@ -1249,39 +1306,41 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         current_disp_shape = self.static_ss.get_domain_shape(self.current_level)
         current_disp_grid2world = self.static_ss.get_affine(self.current_level)
-        current_disp_world2grid = self.static_ss.get_affine_inv(
-            self.current_level
-        )
+        current_disp_world2grid = self.static_ss.get_affine_inv(self.current_level)
         current_disp_spacing = cp.asarray(
             self.static_ss.get_spacing(self.current_level), dtype=cp.float32
         )
 
         # Warp the input images (smoothed to the current scale) to the common
         # (reference) space at the current resolution
-        wstatic = self.static_to_ref.transform_inverse(current_static,
-                                                       'linear',
-                                                       None,
-                                                       current_disp_shape,
-                                                       current_disp_grid2world)
-        wmoving = self.moving_to_ref.transform_inverse(current_moving,
-                                                       'linear',
-                                                       None,
-                                                       current_disp_shape,
-                                                       current_disp_grid2world)
+        wstatic = self.static_to_ref.transform_inverse(
+            current_static, "linear", None, current_disp_shape, current_disp_grid2world
+        )
+        wmoving = self.moving_to_ref.transform_inverse(
+            current_moving, "linear", None, current_disp_shape, current_disp_grid2world
+        )
         # Pass both images to the metric. Now both images are sampled on the
         # reference grid (equal to the static image's grid) and the direction
         # doesn't change across scales
-        self.metric.set_moving_image(wmoving, current_disp_grid2world,
-                                     current_disp_spacing,
-                                     self.static_direction)
+        self.metric.set_moving_image(
+            wmoving,
+            current_disp_grid2world,
+            current_disp_spacing,
+            self.static_direction,
+        )
         self.metric.use_moving_image_dynamics(
-            current_moving, self.moving_to_ref.inverse())
+            current_moving, self.moving_to_ref.inverse()
+        )
 
-        self.metric.set_static_image(wstatic, current_disp_grid2world,
-                                     current_disp_spacing,
-                                     self.static_direction)
+        self.metric.set_static_image(
+            wstatic,
+            current_disp_grid2world,
+            current_disp_spacing,
+            self.static_direction,
+        )
         self.metric.use_static_image_dynamics(
-            current_static, self.static_to_ref.inverse())
+            current_static, self.static_to_ref.inverse()
+        )
 
         # Initialize the metric for a new iteration
         self.metric.initialize_iteration()
@@ -1313,8 +1372,11 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         # Add to current total field
         self.static_to_ref.forward, md_forward = self.update(
-            self.static_to_ref.forward, fw_step,
-            current_disp_world2grid, self.step_length)
+            self.static_to_ref.forward,
+            fw_step,
+            current_disp_world2grid,
+            self.step_length,
+        )
         del fw_step
 
         # Keep track of the forward energy
@@ -1345,8 +1407,11 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         # Add to current total field
         self.moving_to_ref.forward, md_backward = self.update(
-            self.moving_to_ref.forward, bw_step,
-            current_disp_world2grid, self.step_length)
+            self.moving_to_ref.forward,
+            bw_step,
+            current_disp_world2grid,
+            self.step_length,
+        )
         del bw_step
 
         # Keep track of the energy
@@ -1357,10 +1422,11 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             der = self._get_energy_derivative()
 
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
-            ch = '-' if np.isnan(der) else der
-            logger.info('%d:\t%0.6f\t%0.6f\t%0.6f\t%s' %
-                        (n_iter, fw_energy, bw_energy,
-                         fw_energy + bw_energy, ch))
+            ch = "-" if np.isnan(der) else der
+            logger.info(
+                "%d:\t%0.6f\t%0.6f\t%0.6f\t%s"
+                % (n_iter, fw_energy, bw_energy, fw_energy + bw_energy, ch)
+            )
 
         total_energy = fw_energy + bw_energy
         if isinstance(total_energy, cp.ndarray):
@@ -1378,7 +1444,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         return der
 
     def __set_no_boundary_displacement(self, step):
-        """ set zero displacements at the boundary
+        """set zero displacements at the boundary
 
         Parameters
         ----------
@@ -1488,7 +1554,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         """
         x = np.asarray(x)
         y = np.asarray(y)
-        X = np.row_stack((x ** 2, x, np.ones_like(x)))
+        X = np.row_stack((x**2, x, np.ones_like(x)))
         XX = (X).dot(X.T)
         b = X.dot(y)
         beta = linalg.solve(XX, b)
@@ -1504,9 +1570,9 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         """
         n_iter = len(self.energy_list)
         if n_iter < self.energy_window:
-            raise ValueError('Not enough data to fit the energy profile')
+            raise ValueError("Not enough data to fit the energy profile")
         x = range(self.energy_window)
-        y = self.energy_list[(n_iter - self.energy_window):n_iter]
+        y = self.energy_list[(n_iter - self.energy_window) : n_iter]
         ss = sum(y)
         if not ss == 0:  # avoid division by zero
             ss = -ss if ss > 0 else ss
@@ -1524,7 +1590,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.callback(self, RegistrationStages.OPT_START)
         for level in range(self.levels - 1, -1, -1):
             if self.verbosity >= VerbosityLevels.STATUS:
-                logger.info('Optimizing level %d' % level)
+                logger.info("Optimizing level %d" % level)
 
             self.current_level = level
 
@@ -1532,9 +1598,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.metric.set_levels_above(level)
 
             if level < self.levels - 1:
-                expand_factors = self.static_ss.get_expand_factors(
-                    level + 1, level
-                )
+                expand_factors = self.static_ss.get_expand_factors(level + 1, level)
                 new_shape = self.static_ss.get_domain_shape(level)
                 self.static_to_ref.expand_fields(expand_factors, new_shape)
                 self.moving_to_ref.expand_fields(expand_factors, new_shape)
@@ -1546,8 +1610,9 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             if self.callback is not None:
                 self.callback(self, RegistrationStages.SCALE_START)
 
-            while ((self.niter < self.level_iters[self.levels - 1 - level])
-                   and (self.opt_tol < derivative)):
+            while (self.niter < self.level_iters[self.levels - 1 - level]) and (
+                self.opt_tol < derivative
+            ):
                 derivative = self._iterate()
                 self.niter += 1
 
@@ -1564,16 +1629,14 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         if verbose:
             logger.info(
-                "Static-Reference Residual error: %0.6f (%0.6f)"
-                % (stats[1], stats[2])
+                "Static-Reference Residual error: %0.6f (%0.6f)" % (stats[1], stats[2])
             )
 
         residual, stats = self.moving_to_ref.compute_inversion_error(omit_stats)
 
         if verbose:
             logger.info(
-                "Moving-Reference Residual error :%0.6f (%0.6f)"
-                % (stats[1], stats[2])
+                "Moving-Reference Residual error :%0.6f (%0.6f)" % (stats[1], stats[2])
             )
 
         # Compose the two partial transformations
@@ -1584,14 +1647,18 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         # Report mean and std for the composed deformation field
         residual, stats = self.static_to_ref.compute_inversion_error(omit_stats)
         if verbose:
-            logger.info(
-                "Final residual error: %0.6f (%0.6f)" % (stats[1], stats[2])
-            )
+            logger.info("Final residual error: %0.6f (%0.6f)" % (stats[1], stats[2]))
         if self.callback is not None:
             self.callback(self, RegistrationStages.OPT_END)
 
-    def optimize(self, static, moving, static_grid2world=None,
-                 moving_grid2world=None, prealign=None):
+    def optimize(
+        self,
+        static,
+        moving,
+        static_grid2world=None,
+        moving_grid2world=None,
+        prealign=None,
+    ):
         """
         Starts the optimization
 
@@ -1631,8 +1698,13 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             if prealign is not None:
                 logger.info("Pre-align: " + str(prealign))
 
-        self._init_optimizer(static.astype(floating), moving.astype(floating),
-                             static_grid2world, moving_grid2world, prealign)
+        self._init_optimizer(
+            static.astype(floating),
+            moving.astype(floating),
+            static_grid2world,
+            moving_grid2world,
+            prealign,
+        )
         self._optimize()
         self._end_optimizer()
         self.static_to_ref.forward = cp.asarray(self.static_to_ref.forward)

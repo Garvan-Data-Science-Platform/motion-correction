@@ -9,24 +9,28 @@ docs.  In setup.py in particular, we exec this file, so it cannot import cudipy
 _version_major = 0
 _version_minor = 1
 _version_micro = 0
-_version_extra = 'dev'
+_version_extra = "dev"
 # _version_extra = ''
 
 # Format expected by setup.py and doc/source/conf.py: string of form "X.Y.Z"
-__version__ = "%s.%s.%s%s" % (_version_major,
-                              _version_minor,
-                              _version_micro,
-                              _version_extra)
+__version__ = "%s.%s.%s%s" % (
+    _version_major,
+    _version_minor,
+    _version_micro,
+    _version_extra,
+)
 
-CLASSIFIERS = ["Development Status :: 3 - Alpha",
-               "Environment :: Console",
-               "Intended Audience :: Science/Research",
-               "License :: OSI Approved :: BSD License",
-               "Operating System :: OS Independent",
-               "Programming Language :: Python",
-               "Topic :: Scientific/Engineering"]
+CLASSIFIERS = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Topic :: Scientific/Engineering",
+]
 
-description = 'GPU accelerated diffusion MRI utilities in python'
+description = "GPU accelerated diffusion MRI utilities in python"
 
 # Note: this long_description is actually a copy/paste from the top-level
 # README.rst, so that it shows up nicely on PyPI.  So please remember to edit
@@ -78,14 +82,14 @@ cuDIPY uses other libraries also licensed under the BSD or the MIT licenses.
 
 # versions for dependencies
 # Check these versions against and requirements.txt
-CUPY_MIN_VERSION = '7.8.0'
-NIBABEL_MIN_VERSION = '3.0.0'
-NUMPY_MIN_VERSION = '1.12.0'
-SCIPY_MIN_VERSION = '1.0'
-DIPY_MIN_VERSION = '1.2.0'
+CUPY_MIN_VERSION = "7.8.0"
+NIBABEL_MIN_VERSION = "3.0.0"
+NUMPY_MIN_VERSION = "1.12.0"
+SCIPY_MIN_VERSION = "1.0"
+DIPY_MIN_VERSION = "1.2.0"
 
 # Main setup parameters
-NAME = 'cudipy'
+NAME = "cudipy"
 MAINTAINER = "Gregory R. Lee"
 MAINTAINER_EMAIL = "neuroimaging@python.org"
 DESCRIPTION = description
@@ -100,14 +104,16 @@ PLATFORMS = "OS Independent"
 MAJOR = _version_major
 MINOR = _version_minor
 MICRO = _version_micro
-ISRELEASE = _version_extra == ''
+ISRELEASE = _version_extra == ""
 VERSION = __version__
 PROVIDES = ["cudipy"]
-REQUIRES = ["cupy (>=%s)" % CUPY_MIN_VERSION,
-            "dipy (>=%s)" % DIPY_MIN_VERSION,
-            "nibabel (>=%s)" % NIBABEL_MIN_VERSION,
-            "numpy (>=%s)" % NUMPY_MIN_VERSION,
-            "scipy (>=%s)" % SCIPY_MIN_VERSION]
+REQUIRES = [
+    "cupy (>=%s)" % CUPY_MIN_VERSION,
+    "dipy (>=%s)" % DIPY_MIN_VERSION,
+    "nibabel (>=%s)" % NIBABEL_MIN_VERSION,
+    "numpy (>=%s)" % NUMPY_MIN_VERSION,
+    "scipy (>=%s)" % SCIPY_MIN_VERSION,
+]
 EXTRAS_REQUIRE = {
     "test": [
         "pytest",
@@ -123,10 +129,9 @@ EXTRAS_REQUIRE = {
         "nibabel>=3.0.0",
         "matplotlib",
     ],
-    "viz": [
-        "matplotlib"
-    ],
+    "viz": ["matplotlib"],
 }
 
-EXTRAS_REQUIRE["all"] = list(set([a[i] for a in list(EXTRAS_REQUIRE.values())
-                                  for i in range(len(a))]))
+EXTRAS_REQUIRE["all"] = list(
+    set([a[i] for a in list(EXTRAS_REQUIRE.values()) for i in range(len(a))])
+)

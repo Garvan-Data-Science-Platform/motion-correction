@@ -11,6 +11,7 @@ _otsu_available = False
 
 try:
     from cupyimg.skimage.filters import threshold_otsu as otsu
+
     _otsu_available = True
 except ImportError:
 
@@ -19,7 +20,7 @@ except ImportError:
 
 
 def multi_median(input, median_radius, numpass):
-    """ Applies median filter multiple times on input data.
+    """Applies median filter multiple times on input data.
 
     Parameters
     ----------
@@ -53,7 +54,7 @@ def multi_median(input, median_radius, numpass):
 
 
 def applymask(vol, mask):
-    """ Mask vol with mask.
+    """Mask vol with mask.
 
     Parameters
     ----------
@@ -100,7 +101,7 @@ def bounding_box(vol):
     maxs = [len(temp) - int(temp[::-1].argmax())]
     # Check that vol is not all 0
     if mins[0] == 0 and temp[0] == 0:
-        warn('No data found in volume to bound. Returning empty bounding box.')
+        warn("No data found in volume to bound. Returning empty bounding box.")
         return [0] * vol.ndim, [0] * vol.ndim
     # Find bounds on remaining dimensions
     if vol.ndim > 1:
@@ -130,8 +131,9 @@ def crop(vol, mins, maxs):
     return vol[tuple(slice(i, j) for i, j in zip(mins, maxs))]
 
 
-def median_otsu(input_volume, vol_idx=None, median_radius=4, numpass=4,
-                autocrop=False, dilate=None):
+def median_otsu(
+    input_volume, vol_idx=None, median_radius=4, numpass=4, autocrop=False, dilate=None
+):
     """Simple brain extraction tool method for images from DWI data.
 
     It uses a median filter smoothing of the input_volumes `vol_idx` and an

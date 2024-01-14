@@ -1,6 +1,6 @@
 import cupy as cp
 
-from .vector_fields import (          # noqa
+from .vector_fields import (  # noqa
     compose_vector_fields,
     gradient,
     invert_vector_field_fixed_point,
@@ -10,5 +10,5 @@ from .vector_fields import (          # noqa
     warp,
 )
 
-floating = cp.float32                 # noqa
+floating = cp.float32  # noqa
 del cp

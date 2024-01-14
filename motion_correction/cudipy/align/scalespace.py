@@ -15,12 +15,16 @@ logger = logging.getLogger(__name__)
 
 
 class ScaleSpace(object):
-    def __init__(self, image, num_levels,
-                 image_grid2world=None,
-                 input_spacing=None,
-                 sigma_factor=0.2,
-                 mask0=False):
-        """ ScaleSpace
+    def __init__(
+        self,
+        image,
+        num_levels,
+        image_grid2world=None,
+        input_spacing=None,
+        sigma_factor=0.2,
+        mask0=False,
+    ):
+        """ScaleSpace
 
         Computes the Scale Space representation of an image. The scale space is
         simply a list of images produced by smoothing the input image with a
@@ -89,7 +93,7 @@ class ScaleSpace(object):
         # Compute the rest of the levels
         min_spacing = cp.min(input_spacing)
         for i in range(1, num_levels):
-            scaling_factor = 2 ** i
+            scaling_factor = 2**i
             # Note: the minimum below is present in ANTS to prevent the scaling
             # from being too large (making the sub-sampled image to be too
             # small) this makes the sub-sampled image at least 32 voxels at
@@ -146,8 +150,9 @@ class ScaleSpace(object):
             the expand factors (a scalar for each voxel dimension)
 
         """
-        factors = (np.array(self.spacings[to_level])
-                   / np.array(self.spacings[from_level]))
+        factors = np.array(self.spacings[to_level]) / np.array(
+            self.spacings[from_level]
+        )
         return factors
 
     def print_level(self, level):
@@ -160,11 +165,11 @@ class ScaleSpace(object):
         level : int, 0 <= from_level < L, (L = number of resolutions)
             the scale space level to be printed
         """
-        logger.info('Domain shape: ' + str(self.get_domain_shape(level)))
-        logger.info('Spacing: ' + str(self.get_spacing(level)))
-        logger.info('Scaling: ' + str(self.get_scaling(level)))
-        logger.info('Affine: ' + str(self.get_affine(level)))
-        logger.info('Sigmas: ' + str(self.get_sigmas(level)))
+        logger.info("Domain shape: " + str(self.get_domain_shape(level)))
+        logger.info("Spacing: " + str(self.get_spacing(level)))
+        logger.info("Scaling: " + str(self.get_scaling(level)))
+        logger.info("Affine: " + str(self.get_affine(level)))
+        logger.info("Sigmas: " + str(self.get_sigmas(level)))
 
     def _get_attribute(self, attribute, level):
         """Returns an attribute from the Scale Space at a given level
@@ -187,7 +192,7 @@ class ScaleSpace(object):
         """
         if 0 <= level < self.num_levels:
             return attribute[level]
-        raise ValueError('Invalid pyramid level: ' + str(level))
+        raise ValueError("Invalid pyramid level: " + str(level))
 
     def get_image(self, level):
         """Smoothed image at a given level
@@ -326,11 +331,16 @@ class ScaleSpace(object):
 
 
 class IsotropicScaleSpace(ScaleSpace):
-    def __init__(self, image, factors, sigmas,
-                 image_grid2world=None,
-                 input_spacing=None,
-                 mask0=False):
-        """ IsotropicScaleSpace
+    def __init__(
+        self,
+        image,
+        factors,
+        sigmas,
+        image_grid2world=None,
+        input_spacing=None,
+        mask0=False,
+    ):
+        """IsotropicScaleSpace
 
         Computes the Scale Space representation of an image using isotropic
         smoothing kernels for all scales. The scale space is simply a list
@@ -426,12 +436,8 @@ class IsotropicScaleSpace(ScaleSpace):
             new_sigmas = np.ones(self.dim) * sigmas[self.num_levels - i - 1]
 
             # Filter along each direction with the appropriate sigma
-            filtered = _filters.gaussian_filter(
-                image.astype(np.float64), new_sigmas
-            )
-            filtered = (filtered.astype(np.float64) - filtered.min()) / cp.ptp(
-                filtered
-            )
+            filtered = _filters.gaussian_filter(image.astype(np.float64), new_sigmas)
+            filtered = (filtered.astype(np.float64) - filtered.min()) / cp.ptp(filtered)
             if mask0:
                 filtered *= mask
 

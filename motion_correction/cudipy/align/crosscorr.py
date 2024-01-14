@@ -60,7 +60,6 @@ def convolve_separable(x, w, axes=None, **kwargs):
 
 
 def precompute_cc_factors(ad, bd, radius, mode="constant"):
-
     # factors = cp.zeros((5,) + ad.shape, dtype=ad.dtype)
     factors = [None] * 5
     sum_h = cp.ones((2 * radius + 1,), dtype=ad.dtype)
@@ -74,9 +73,9 @@ def precompute_cc_factors(ad, bd, radius, mode="constant"):
     if mode != "constant":
         cnt = (2 * radius + 1) ** ad.ndim
     else:
-        cnt = convolve_separable(
-            cp.ones_like(ad), (sum_h,) * ad.ndim, **kwargs
-        ).astype(cp.int32)
+        cnt = convolve_separable(cp.ones_like(ad), (sum_h,) * ad.ndim, **kwargs).astype(
+            cp.int32
+        )
 
     if True:
         factors[0] = cp.empty_like(ad)
@@ -162,8 +161,7 @@ _cc_local_correlation = cp.ElementwiseKernel(
 
 
 def _compute_cc_step(
-    grad_static, factors, radius, forward=True, zero_borders=True,
-    coord_axis=-1
+    grad_static, factors, radius, forward=True, zero_borders=True, coord_axis=-1
 ):
     out = cp.empty_like(grad_static)
     ndim = out.ndim - 1

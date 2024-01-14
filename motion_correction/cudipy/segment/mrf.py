@@ -25,12 +25,11 @@ class ConstantObservationModel(object):
     """
 
     def __init__(self):
-        r""" Initializes an instance of the ConstantObservationModel class
-        """
+        r"""Initializes an instance of the ConstantObservationModel class"""
         pass
 
     def initialize_param_uniform(self, image, nclasses):
-        r""" Initializes the means and variances uniformly
+        r"""Initializes the means and variances uniformly
 
         The means are initialized uniformly along the dynamic range of
         `image`. The variances are set to 1 for all classes
@@ -58,7 +57,7 @@ class ConstantObservationModel(object):
         return mu, sigma
 
     def seg_stats(self, input_image, seg_image, nclass):
-        r""" Mean and standard variation for N desired  tissue classes
+        r"""Mean and standard variation for N desired  tissue classes
 
         Parameters
         ----------
@@ -87,7 +86,7 @@ class ConstantObservationModel(object):
         return mu, std
 
     def negloglikelihood(self, image, mu, sigmasq, nclasses):
-        r""" Computes the gaussian negative log-likelihood of each class at
+        r"""Computes the gaussian negative log-likelihood of each class at
         each voxel of `image` assuming a gaussian distribution with means and
         variances given by `mu` and `sigmasq`, respectively (constant models
         along the full volume). The negative log-likelihood will be written
@@ -119,7 +118,7 @@ class ConstantObservationModel(object):
         return nloglike
 
     def prob_image(self, img, nclasses, mu, sigmasq, P_L_N):
-        r""" Conditional probability of the label given the image
+        r"""Conditional probability of the label given the image
 
         Parameters
         -----------
@@ -159,7 +158,7 @@ class ConstantObservationModel(object):
         return P_L_Y
 
     def update_param(self, image, P_L_Y, mu, nclasses):
-        r""" Updates the means and the variances in each iteration for all
+        r"""Updates the means and the variances in each iteration for all
         the labels. This is for equations 25 and 26 of Zhang et. al.,
         IEEE Trans. Med. Imag, Vol. 20, No. 1, Jan 2001.
 
@@ -225,7 +224,6 @@ def _negloglikelihood(image, mu, sigmasq):
         neglog[small_mask] = 1 + c
         neglog[~small_mask] = np.inf
     else:
-
         # fuse simple computations to reduce kernel launch overhead
         @cp.fuse()
         def _helper(image, mu, var, c):
@@ -290,7 +288,7 @@ class IteratedConditionalModes(object):
         pass
 
     def initialize_maximum_likelihood(self, nloglike):
-        r""" Initializes the segmentation of an image with given
+        r"""Initializes the segmentation of an image with given
             neg-loglikelihood
 
         Initializes the segmentation of an image with neglog-likelihood field
@@ -312,7 +310,7 @@ class IteratedConditionalModes(object):
         return nloglike.argmin(axis=0).astype(np.int16)
 
     def icm_ising(self, nloglike, beta, seg):
-        r""" Executes one iteration of the ICM algorithm for MRF MAP
+        r"""Executes one iteration of the ICM algorithm for MRF MAP
         estimation. The prior distribution of the MRF is a Gibbs
         distribution with the Potts/Ising model with parameter `beta`:
 
@@ -371,7 +369,7 @@ class IteratedConditionalModes(object):
         return new_seg, energy
 
     def prob_neighborhood(self, seg, beta, nclasses, float_dtype=np.float32):
-        r""" Conditional probability of the label given the neighborhood
+        r"""Conditional probability of the label given the neighborhood
         Equation 2.18 of the Stan Z. Li book (Stan Z. Li, Markov Random Field
         Modeling in Image Analysis, 3rd ed., Advances in Pattern Recognition
         Series, Springer Verlag 2009.)

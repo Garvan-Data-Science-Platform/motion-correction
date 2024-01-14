@@ -38,26 +38,32 @@ def tv_regularize(x, tau=0.3, dt=0.2, max_iter=100, p=None, g=None):
 
     """
     if p is None:
-        p = np.zeros((x.ndim, ) + x.shape)
+        p = np.zeros((x.ndim,) + x.shape)
     if g is None:
         g = np.zeros_like(p)
     f = dt / tau
     out = x
 
-    s_g = [slice(None), ] * (x.ndim + 1)
-    s_d = [slice(None), ] * x.ndim
-    s_p = [slice(None), ] * (x.ndim + 1)
+    s_g = [
+        slice(None),
+    ] * (x.ndim + 1)
+    s_d = [
+        slice(None),
+    ] * x.ndim
+    s_p = [
+        slice(None),
+    ] * (x.ndim + 1)
 
     for _ in range(max_iter):
         for ax in range(x.ndim):
             s_g[0] = ax
-            s_g[ax+1] = slice(0, -1)
+            s_g[ax + 1] = slice(0, -1)
             g[tuple(s_g)] = np.diff(out, axis=ax)
-            s_g[ax+1] = slice(None)
+            s_g[ax + 1] = slice(None)
 
-        norm = np.sqrt((g ** 2).sum(axis=0))[np.newaxis, ...]
+        norm = np.sqrt((g**2).sum(axis=0))[np.newaxis, ...]
         norm *= f
-        norm += 1.
+        norm += 1.0
         p -= dt * g
         p /= norm
 
@@ -65,11 +71,11 @@ def tv_regularize(x, tau=0.3, dt=0.2, max_iter=100, p=None, g=None):
         d = -p.sum(0)
         for ax in range(x.ndim):
             s_d[ax] = slice(1, None)
-            s_p[ax+1] = slice(0, -1)
+            s_p[ax + 1] = slice(0, -1)
             s_p[0] = ax
             d[tuple(s_d)] += p[tuple(s_p)]
             s_d[ax] = slice(None)
-            s_p[ax+1] = slice(None)
+            s_p[ax + 1] = slice(None)
 
         out = x + d
     return out
@@ -99,14 +105,12 @@ def resize_flow(u, v, shape):
     """
 
     nl, nc = u.shape
-    sy, sx = shape[0]/nl, shape[1]/nc
+    sy, sx = shape[0] / nl, shape[1] / nc
 
-    u = resize(u, shape, order=0, preserve_range=True,
-               anti_aliasing=False)
-    v = resize(v, shape, order=0, preserve_range=True,
-               anti_aliasing=False)
+    u = resize(u, shape, order=0, preserve_range=True, anti_aliasing=False)
+    v = resize(v, shape, order=0, preserve_range=True, anti_aliasing=False)
 
-    ru, rv = sx*u, sy*v
+    ru, rv = sx * u, sy * v
 
     return ru, rv
 
@@ -177,10 +181,12 @@ def coarse_to_fine(I0, I1, solver, downscale=2, nlevel=10, min_size=16):
     if I0.shape != I1.shape:
         raise ValueError("Input images should have the same shape")
 
-    pyramid = list(zip(get_pyramid(skimage.img_as_float32(I0),
-                                   downscale, nlevel, min_size),
-                       get_pyramid(skimage.img_as_float32(I1),
-                                   downscale, nlevel, min_size)))
+    pyramid = list(
+        zip(
+            get_pyramid(skimage.img_as_float32(I0), downscale, nlevel, min_size),
+            get_pyramid(skimage.img_as_float32(I1), downscale, nlevel, min_size),
+        )
+    )
 
     u = np.zeros_like(pyramid[0][0])
     v = np.zeros_like(u)

@@ -12,15 +12,15 @@ from motion_correction.pqreader import load_ptfile
 from .utility import join_path, save_sequence_images
 from numba import njit
 
-np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
+# np.warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
 
 
 class SimMetric(Enum):
-    NCC = 'ncc'
-    SPM = 'spm'
-    MSE = 'mse'
-    NRM = 'nrm'
-    SSI = 'ssi'
+    NCC = "ncc"
+    SPM = "spm"
+    MSE = "mse"
+    NRM = "nrm"
+    SSI = "ssi"
 
 
 class FlimAligner:
@@ -78,7 +78,11 @@ class FlimAligner:
         self.new_sim = None
         self.meta = None
 
-    def set_methods(self, global_method: _CorrectionAlgorithm | None = None, local_method: _CorrectionAlgorithm | None = None):
+    def set_methods(
+        self,
+        global_method: _CorrectionAlgorithm | None = None,
+        local_method: _CorrectionAlgorithm | None = None,
+    ):
         """
         Set the global and local alignment methods.
 
@@ -145,7 +149,9 @@ class FlimAligner:
 
         assert 0 <= ref_frame_idx < self.shape[2]
 
-        results = calculate_correction(self.flim_frames, ref_frame_idx, self.local_method, self.global_method)
+        results = calculate_correction(
+            self.flim_frames, ref_frame_idx, self.local_method, self.global_method
+        )
 
         self.transforms = results["combined_transforms"]
         self.old_sim = results["metrics"][self.sim_metric.value]["original"]
@@ -160,39 +166,45 @@ class FlimAligner:
             save_dir (str): The directory where results will be saved.
         """
         if save_dir is None:
-            self.save_dir = os.path.join(os.getcwd(), 'save_dir')
+            self.save_dir = os.path.join(os.getcwd(), "save_dir")
         else:
             self.save_dir = save_dir
         Path(self.save_dir).mkdir(parents=True, exist_ok=True)
 
         name = os.path.basename(self.ptfile)
 
-        save_sequence_images(join_path(self.save_dir, f'{name}_original.mp4'),
-                             np.moveaxis(self.flim_frames, [0, 1, 2], [1, 2, 0]))
-        save_sequence_images(join_path(self.save_dir, f'{name}_aligned.mp4'),
-                             np.moveaxis(self.flim_frames_corrected, [0, 1, 2], [1, 2, 0]))
+        save_sequence_images(
+            join_path(self.save_dir, f"{name}_original.mp4"),
+            np.moveaxis(self.flim_frames, [0, 1, 2], [1, 2, 0]),
+        )
+        save_sequence_images(
+            join_path(self.save_dir, f"{name}_aligned.mp4"),
+            np.moveaxis(self.flim_frames_corrected, [0, 1, 2], [1, 2, 0]),
+        )
 
         fig, axes = plt.subplots(1, 2, figsize=(12, 6))
         subfig0 = axes[0].imshow(np.sum(self.flim_frames, axis=2))
         plt.colorbar(subfig0, ax=axes[0], fraction=0.046, pad=0.04)
-        axes[0].set_title('original')
+        axes[0].set_title("original")
         subfig1 = axes[1].imshow(np.sum(self.flim_frames_corrected, axis=2))
         plt.colorbar(subfig1, ax=axes[1], fraction=0.046, pad=0.04)
-        axes[1].set_title('aligned')
+        axes[1].set_title("aligned")
         for ax in axes:
             ax.set_xticks([])
             ax.set_yticks([])
         plt.tight_layout()
-        plt.savefig(os.path.join(self.save_dir, f"{name}_intensity_images.svg"), format='svg')
+        plt.savefig(
+            os.path.join(self.save_dir, f"{name}_intensity_images.svg"), format="svg"
+        )
         plt.close()
 
         plt.plot(self.old_sim, linewidth=2, label="Original")
         plt.plot(self.new_sim, linewidth=2, label="Aligned")
         plt.ylabel(self.sim_metric)
-        plt.xlabel('Frame')
-        plt.legend(loc='best')
+        plt.xlabel("Frame")
+        plt.legend(loc="best")
         plt.tight_layout()
-        plt.savefig(os.path.join(self.save_dir, f"{name}_sim_plot.svg"), format='svg')
+        plt.savefig(os.path.join(self.save_dir, f"{name}_sim_plot.svg"), format="svg")
         plt.close()
         print(f"Visualization results have been saved to {self.save_dir}")
 
@@ -207,7 +219,9 @@ class FlimAligner:
             This method assumes that the FLIM data has already been loaded using the `get_intensity_stack` method.
 
         """
-        tuple_data, _ = load_ptfile(self.ptfile, is_raw=True)  # shape: H x W x C x F x nanotime
+        tuple_data, _ = load_ptfile(
+            self.ptfile, is_raw=True
+        )  # shape: H x W x C x F x nanotime
         flim_data_dict, shape = tuple_data
         coords = flim_data_dict[:5, :]
         data = flim_data_dict[5, :]
@@ -217,14 +231,25 @@ class FlimAligner:
 
         num_rows, num_cols, num_channels, num_frames, num_nanotimes = shape
         self.curve_fit = np.zeros((num_nanotimes, num_rows, num_cols), dtype=np.uint16)
-        self.curve_fit_corrected = np.zeros((num_nanotimes, num_rows, num_cols), dtype=np.float32)
-        self.curve_fit_corrected_int = np.zeros((num_nanotimes, num_rows, num_cols), dtype=np.uint16)
+        self.curve_fit_corrected = np.zeros(
+            (num_nanotimes, num_rows, num_cols), dtype=np.float32
+        )
+        self.curve_fit_corrected_int = np.zeros(
+            (num_nanotimes, num_rows, num_cols), dtype=np.uint16
+        )
 
-        header_variables = np.array([
-            self.meta['imghdr'][1], self.meta['imghdr'][6],
-            self.meta['imghdr'][7], self.meta['imghdr'][3],
-            self.meta['imghdr'][4], self.meta['imghdr'][2]], dtype=np.uint64)
-        ImgHdr_PixX = header_variables[1]
+        header_variables = np.array(
+            [
+                self.meta["imghdr"][1],
+                self.meta["imghdr"][6],
+                self.meta["imghdr"][7],
+                self.meta["imghdr"][3],
+                self.meta["imghdr"][4],
+                self.meta["imghdr"][2],
+            ],
+            dtype=np.uint64,
+        )
+        # ImgHdr_PixX = header_variables[1]
         ImgHdr_LineStart = header_variables[3]
         ImgHdr_LineStop = header_variables[4]
         ImgHdr_Frame = header_variables[5]
@@ -239,7 +264,9 @@ class FlimAligner:
 
         ts_index = 0
         current_ts = 0
-        corrected_frames = np.zeros((num_rows, num_cols, num_channels, num_nanotimes), dtype=np.uint16)
+        corrected_frames = np.zeros(
+            (num_rows, num_cols, num_channels, num_nanotimes), dtype=np.uint16
+        )
         for frame_idx in (pbar := tqdm(range(num_frames))):
             pbar.set_description("Aligning raw data")
             for ch in range(num_channels):
@@ -249,10 +276,18 @@ class FlimAligner:
                 warped, warped_int = _flow_warp(frame, flow)  # Z x H x W
                 self.curve_fit_corrected += warped
                 self.curve_fit_corrected_int += warped_int
-                corrected_frames[:, :, ch, :] = np.moveaxis(warped_int, [0, 1, 2], [2, 0, 1])
+                corrected_frames[:, :, ch, :] = np.moveaxis(
+                    warped_int, [0, 1, 2], [2, 0, 1]
+                )
 
             sync, chan, tcspc, current_ts, ts_index = _stream_one_frame(
-                corrected_frames, LineStartMarker, LineStopMarker, FrameMarker, current_ts, ts_index)
+                corrected_frames,
+                LineStartMarker,
+                LineStopMarker,
+                FrameMarker,
+                current_ts,
+                ts_index,
+            )
             timestamps = np.concatenate((timestamps, sync), axis=0)
             detectors = np.concatenate((detectors, chan), axis=0)
             nanotimes = np.concatenate((nanotimes, tcspc), axis=0)
@@ -260,23 +295,42 @@ class FlimAligner:
         # save stream data to pt3 file
         time_bit = 16
         dtime_bit = 12
-        t3records = np.left_shift(detectors.astype(np.uint32), time_bit + dtime_bit) \
-            | np.left_shift(nanotimes.astype(np.uint32), time_bit) \
+        t3records = (
+            np.left_shift(detectors.astype(np.uint32), time_bit + dtime_bit)
+            | np.left_shift(nanotimes.astype(np.uint32), time_bit)
             | timestamps.astype(np.uint16)
+        )
 
-        filename = os.path.join(self.save_dir, os.path.basename(self.ptfile)[:-4]+"_corrected.pt3")
-        print(f'Data exported to {filename}')
-        with open(filename, 'wb') as f:
-            for m in ['header', 'dispcurve', 'params', 'repeatgroup', 'hardware', 'router', 'ttmode']:
+        filename = os.path.join(
+            self.save_dir, os.path.basename(self.ptfile)[:-4] + "_corrected.pt3"
+        )
+        print(f"Data exported to {filename}")
+        with open(filename, "wb") as f:
+            for m in [
+                "header",
+                "dispcurve",
+                "params",
+                "repeatgroup",
+                "hardware",
+                "router",
+                "ttmode",
+            ]:
                 f.write(np.array(self.meta[m]).tobytes())
-            f.write(np.array(self.meta['imghdr']))
+            f.write(np.array(self.meta["imghdr"]))
             f.write(t3records.astype(np.uint32))
 
 
 @njit
-def _stream_one_frame(corrected_frames, LineStartMarker, LineStopMarker, FrameMarker, current_ts=0, ts_index=0):
+def _stream_one_frame(
+    corrected_frames,
+    LineStartMarker,
+    LineStopMarker,
+    FrameMarker,
+    current_ts=0,
+    ts_index=0,
+):
     num_rows, num_cols, num_channels, num_nanotimes = corrected_frames.shape
-    total_entries = int(corrected_frames.sum()*2 + 1 + num_rows * 2)
+    total_entries = int(corrected_frames.sum() * 2 + 1 + num_rows * 2)
 
     # Initialize arrays
     sync = np.zeros(total_entries, dtype=np.uint32)
@@ -302,9 +356,11 @@ def _stream_one_frame(corrected_frames, LineStartMarker, LineStopMarker, FrameMa
                     idx += 1
 
                 num_non_zeros = np.sum(corrected_frames[r, c, ch, :])
-                sync[idx:idx+num_non_zeros] = np.repeat(ts, num_non_zeros)
-                chan[idx:idx+num_non_zeros] = np.repeat(ch + 1, num_non_zeros)
-                tcspc[idx:idx+num_non_zeros] = np.repeat(np.arange(num_nanotimes), corrected_frames[r, c, ch, :])
+                sync[idx : idx + num_non_zeros] = np.repeat(ts, num_non_zeros)
+                chan[idx : idx + num_non_zeros] = np.repeat(ch + 1, num_non_zeros)
+                tcspc[idx : idx + num_non_zeros] = np.repeat(
+                    np.arange(num_nanotimes), corrected_frames[r, c, ch, :]
+                )
                 idx += num_non_zeros
 
         current_ts += num_cols

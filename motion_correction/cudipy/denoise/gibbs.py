@@ -6,13 +6,15 @@ d = cp.cuda.Device()
 
 
 def _sl_axis(axis, ndim, slc):
-    sl = [slice(None),] * ndim
+    sl = [
+        slice(None),
+    ] * ndim
     sl[axis] = slc
     return tuple(sl)
 
 
 def _image_tv(x, h, axis=0, *, xp=None):
-    """ Computes total variation (TV) of matrix x across a given axis and
+    """Computes total variation (TV) of matrix x across a given axis and
     along two directions.
 
     Parameters
@@ -44,7 +46,9 @@ def _image_tv(x, h, axis=0, *, xp=None):
     n_points = h.size
 
     # Add copies of the data so that data extreme points are also analysed
-    pad_width = [(0, 0),] * ndim
+    pad_width = [
+        (0, 0),
+    ] * ndim
     pad_width[axis] = (n_points + 1, n_points + 1)
     xs = xp.pad(x, pad_width=pad_width, mode="wrap")
 
@@ -56,10 +60,8 @@ def _image_tv(x, h, axis=0, *, xp=None):
     ndiff = xp.abs(tmp - xs[diff_sl_n])
 
     center_sl = _sl_axis(axis, ndim, slice(n_points, -n_points))
-    ptv = ndi.convolve1d(
-        pdiff, h, origin=(n_points - 1) // 2, axis=axis)[center_sl]
-    ntv = ndi.convolve1d(
-        ndiff, h, origin=-(n_points // 2), axis=axis)[center_sl]
+    ptv = ndi.convolve1d(pdiff, h, origin=(n_points - 1) // 2, axis=axis)[center_sl]
+    ntv = ndi.convolve1d(ndiff, h, origin=-(n_points // 2), axis=axis)[center_sl]
     return ptv, ntv
 
 
@@ -169,7 +171,7 @@ def _gibbs_removal_1d(x, axis=0, n_points=3, xp=None):
 
 
 def _weights(shape, image_dtype, xp):
-    """ Computes the weights necessary to combine two images processed by
+    """Computes the weights necessary to combine two images processed by
     the 1D Gibbs removal procedure along two different axes [1]_.
 
     Parameters
@@ -215,7 +217,7 @@ def _weights(shape, image_dtype, xp):
 
 
 def _gibbs_removal_2d_or_3d(image, n_points=3, G0=None, G1=None, *, xp=None):
-    """ Suppress Gibbs ringing of a 2D image.
+    """Suppress Gibbs ringing of a 2D image.
 
     Parameters
     ----------
@@ -280,8 +282,9 @@ def _gibbs_removal_2d_or_3d(image, n_points=3, G0=None, G1=None, *, xp=None):
     return imagec
 
 
-def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=False,
-                  num_threads=None, *, xp=None):
+def gibbs_removal(
+    vol, slice_axis=2, n_points=3, inplace=False, num_threads=None, *, xp=None
+):
     """Suppresses Gibbs ringing artefacts of images volumes.
 
     Parameters
@@ -329,15 +332,19 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=False,
         # The implementation here was refactored for the GPU
         # Dipy's version is faster on the CPU, so fall back to it in that case.
         from dipy.denoise.gibbs import gibbs_removal as gibbs_removal_cpu
+
         try:
-            return gibbs_removal_cpu(vol, slice_axis=slice_axis,
-                                     n_points=n_points, inplace=inplace,
-                                     num_threads=num_threads)
+            return gibbs_removal_cpu(
+                vol,
+                slice_axis=slice_axis,
+                n_points=n_points,
+                inplace=inplace,
+                num_threads=num_threads,
+            )
         except TypeError:
             warnings.warn("inplace and num_threads arguments ignored")
             # older DIPY did not have inplace or num_threads kwargs
-            return gibbs_removal_cpu(vol, slice_axis=slice_axis,
-                                     n_points=n_points)
+            return gibbs_removal_cpu(vol, slice_axis=slice_axis, n_points=n_points)
 
     if not isinstance(inplace, bool):
         raise TypeError("inplace must be a boolean.")
@@ -348,8 +355,10 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=False,
     # check the axis corresponding to different slices
     # 1) This axis cannot be larger than 2
     if slice_axis > 2:
-        raise ValueError("Different slices have to be organized along" +
-                         "one of the 3 first matrix dimensions")
+        raise ValueError(
+            "Different slices have to be organized along"
+            + "one of the 3 first matrix dimensions"
+        )
 
     # 2) If this is not 2, swap axes so that different slices are ordered
     # along axis 2. Note that swapping is not required if data is already a

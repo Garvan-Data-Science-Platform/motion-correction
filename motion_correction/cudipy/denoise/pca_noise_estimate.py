@@ -16,7 +16,7 @@ def pca_noise_estimate(
     *,
     allow_single=False,
 ):
-    """ PCA based local noise estimation.
+    """PCA based local noise estimation.
 
     Parameters
     ----------

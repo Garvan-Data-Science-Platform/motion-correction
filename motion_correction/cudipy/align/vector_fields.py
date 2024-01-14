@@ -233,9 +233,7 @@ def _apply_affine_to_field(
         # field is a single, dense ndarray
         ndim = field.ndim - 1
         if field.shape[coord_axis] != ndim:
-            print(
-                f"field.shape={field.shape}, ndim={ndim}, coord_axis={coord_axis}"
-            )
+            print(f"field.shape={field.shape}, ndim={ndim}, coord_axis={coord_axis}")
             raise ValueError("shape mismatch")
 
         if field.ndim != ndim + 1:
@@ -245,9 +243,7 @@ def _apply_affine_to_field(
         if coord_axis == 0:
             field = tuple([f for f in field])
         else:
-            field = tuple(
-                [cupy.ascontiguousarray(field[..., n]) for n in range(ndim)]
-            )
+            field = tuple([cupy.ascontiguousarray(field[..., n]) for n in range(ndim)])
     else:
         ndim = len(field)
     field_dtype = field[0].dtype
@@ -262,9 +258,7 @@ def _apply_affine_to_field(
         if not affine.flags.c_contiguous:
             affine = cupy.ascontiguousarray(affine)
     if affine.shape != affine_shape:
-        raise ValueError(
-            "expected anaffine array with shape {}".format(affine_shape)
-        )
+        raise ValueError("expected anaffine array with shape {}".format(affine_shape))
 
     out_shape = (ndim,) + tuple([field[n].shape[n] for n in range(ndim)])
     if out is None:
@@ -413,9 +407,7 @@ def compose_vector_fields(
                         Y[2],
                     )
                 else:
-                    composeNone_2d(
-                        d1[0], d1[1], xcoords[0], xcoords[1], Y[0], Y[1]
-                    )
+                    composeNone_2d(d1[0], d1[1], xcoords[0], xcoords[1], Y[0], Y[1])
             else:
                 B = cupy.asarray(B[:ndim, :ndim], dtype=d1.dtype, order="C")
                 if ndim == 3:
@@ -432,15 +424,11 @@ def compose_vector_fields(
                         Y[2],
                     )
                 else:
-                    composeB_2d(
-                        d1[0], d1[1], xcoords[0], xcoords[1], B, Y[0], Y[1]
-                    )
+                    composeB_2d(d1[0], d1[1], xcoords[0], xcoords[1], B, Y[0], Y[1])
         elif B is None:
             A = cupy.asarray(A[:ndim, :], dtype=d1.dtype, order="C")
             if ndim == 3:
-                composeA_3d(
-                    xcoords[0], xcoords[1], xcoords[2], A, Y[0], Y[1], Y[2]
-                )
+                composeA_3d(xcoords[0], xcoords[1], xcoords[2], A, Y[0], Y[1], Y[2])
             else:
                 composeA_2d(xcoords[0], xcoords[1], A, Y[0], Y[1])
         else:
@@ -461,9 +449,7 @@ def compose_vector_fields(
                     Y[2],
                 )
             else:
-                composeAB_2d(
-                    d1[0], d1[1], xcoords[0], xcoords[1], B, A, Y[0], Y[1]
-                )
+                composeAB_2d(d1[0], d1[1], xcoords[0], xcoords[1], B, A, Y[0], Y[1])
     else:
         if B is None:
             d1tmp = d1.copy()  # have to copy to avoid modification of d1
@@ -519,7 +505,6 @@ def compose_vector_fields(
                 d1[0], d1[1], Y[0], Y[1], Z[0], Z[1], t, _shape, res[0], res[1]
             )
     else:
-
         # TODO: declare count as boolean?
         count = cupy.zeros(Z.shape[1:], dtype=np.int32)
 
@@ -672,9 +657,7 @@ def simplify_warp_function(
                 Z[n, ...] = ndi.map_coordinates(d[n], Y, order=1, mode=mode)
         else:
             for n in range(ndim):
-                Z[n, ...] = ndi.map_coordinates(
-                    d[..., n], Y, order=1, mode=mode
-                )
+                Z[n, ...] = ndi.map_coordinates(d[..., n], Y, order=1, mode=mode)
 
     if W is not None:
         # Z = mul0(C, Z, sh, cupy, out=Z, lastcol=0)
@@ -941,9 +924,7 @@ def warp(
         Z = cupy.empty_like(Y)
         if coord_axis == -1:
             for n in range(ndim):
-                Z[n, ...] = ndi.map_coordinates(
-                    d1[..., n], Y, order=1, mode=mode
-                )
+                Z[n, ...] = ndi.map_coordinates(d1[..., n], Y, order=1, mode=mode)
         else:
             for n in range(ndim):
                 Z[n, ...] = ndi.map_coordinates(d1[n], Y, order=1, mode=mode)
@@ -1040,23 +1021,16 @@ def down2_even(arr, axes=None, out=None):
         axes = tuple(range(ndim))
     out_shape = list(arr.shape)
     out_shape = tuple(
-        [
-            arr.shape[ax] // 2 if ax in axes else arr.shape[ax]
-            for ax in range(ndim)
-        ]
+        [arr.shape[ax] // 2 if ax in axes else arr.shape[ax] for ax in range(ndim)]
     )
     if out is None:
         out = cupy.empty(out_shape, dtype=arr.dtype)
     elif out.shape != out_shape:
-        raise ValueError(
-            "out does not have expected shape ({})".format(out_shape)
-        )
+        raise ValueError("out does not have expected shape ({})".format(out_shape))
     sl_even = slice(None, None, 2)
     sl_odd = slice(1, None, 2)
     sl_all = slice(None)
-    offsets = [
-        (sl_even, sl_odd) if ax in axes else (sl_all,) for ax in range(ndim)
-    ]
+    offsets = [(sl_even, sl_odd) if ax in axes else (sl_all,) for ax in range(ndim)]
     for offset_slices in itertools.product(*offsets):
         out += arr[offset_slices]
     out /= 2 ** len(axes)
@@ -1064,7 +1038,6 @@ def down2_even(arr, axes=None, out=None):
 
 
 def transform_affine(volume, ref_shape, affine, order=1):
-
     ndim = volume.ndim
     affine = cupy.asarray(affine)
     if True:
@@ -1125,9 +1098,7 @@ def resample_displacement_field(
         the resampled displacement field
     """
     out_shape = tuple(out_shape)
-    factors = cupy.asarray(
-        factors, dtype=cupy.promote_types(field, cupy.float32)
-    )
+    factors = cupy.asarray(factors, dtype=cupy.promote_types(field, cupy.float32))
     ndim = field.shape[coord_axis]
     if coord_axis == -1:
         output = cupy.empty(out_shape + (ndim,), dtype=field.dtype)
@@ -1406,15 +1377,11 @@ def gradient(
         grad_kernel(img, out_grid2world, img_world2grid, dx, tmp, inside)
         dx[ax] = 0.5 * img_spacing[ax]
         if coord_axis == 0:
-            grad_kernel(
-                img, out_grid2world, img_world2grid, dx, out[ax], inside
-            )
+            grad_kernel(img, out_grid2world, img_world2grid, dx, out[ax], inside)
             out[ax] -= tmp
             out[ax] /= img_spacing[ax]
         else:
-            grad_kernel(
-                img, out_grid2world, img_world2grid, dx, out[..., ax], inside
-            )
+            grad_kernel(img, out_grid2world, img_world2grid, dx, out[..., ax], inside)
             out[..., ax] -= tmp
             out[..., ax] /= img_spacing[ax]
         dx[ax] = 0
@@ -1450,9 +1417,7 @@ def sparse_gradient(
     # ret = _get_output(output, input, coordinates.shape[:-1])
 
     if sample_points.shape[0] != img.ndim:
-        raise ValueError(
-            "sample_points should have shape ndim on the first axis"
-        )
+        raise ValueError("sample_points should have shape ndim on the first axis")
     if not sample_points.flags.c_contiguous:
         sample_points = cupy.ascontiguousarray(sample_points)
 
@@ -1478,9 +1443,7 @@ def sparse_gradient(
             out[ax] -= tmp
             out[ax] /= img_spacing[ax]
         else:
-            grad_kernel(
-                img, img_world2grid, sample_points, dx, out[..., ax], inside
-            )
+            grad_kernel(img, img_world2grid, sample_points, dx, out[..., ax], inside)
             out[..., ax] -= tmp
             out[..., ax] /= img_spacing[ax]
         dx[ax] = 0

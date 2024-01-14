@@ -13,6 +13,7 @@ The following two functions account for the majority of the computation time
     icm.prob_neighborhood
 """
 
+
 class TissueClassifierHMRF(object):
     r"""
     This class contains the methods for tissue classification using the Markov
@@ -20,7 +21,6 @@ class TissueClassifierHMRF(object):
     """
 
     def __init__(self, save_history=False, verbose=True):
-
         self.save_history = save_history
         self.segmentations = []
         self.pves = []
@@ -71,7 +71,7 @@ class TissueClassifierHMRF(object):
         com = ConstantObservationModel()
         icm = IteratedConditionalModes()
 
-        if not image.dtype.kind == 'f':
+        if not image.dtype.kind == "f":
             image = image.astype(np.promote_types(image.dtype, np.float32))
 
         if image.max() > 1:
@@ -106,21 +106,18 @@ class TissueClassifierHMRF(object):
             tolerance = 1e-05
 
         for i in range(max_iter):
-
             if self.verbose:
                 print(">> Iteration: " + str(i))
 
             PLN = icm.prob_neighborhood(seg, beta, nclasses)
             PVE = com.prob_image(image_gauss, nclasses, mu, sigmasq, PLN)
 
-            mu_upd, sigmasq_upd = com.update_param(image_gauss,
-                                                   PVE, mu, nclasses)
+            mu_upd, sigmasq_upd = com.update_param(image_gauss, PVE, mu, nclasses)
             ind = xp.argsort(mu_upd)
             mu_upd = mu_upd[ind]
             sigmasq_upd = sigmasq_upd[ind]
 
-            negll = com.negloglikelihood(image_gauss,
-                                         mu_upd, sigmasq_upd, nclasses)
+            negll = com.negloglikelihood(image_gauss, mu_upd, sigmasq_upd, nclasses)
             final_segmentation, energy = icm.icm_ising(negll, beta, seg)
 
             if allow_break:
@@ -136,11 +133,10 @@ class TissueClassifierHMRF(object):
                     self.energies_sum.append(float(energy[energy > -xp.inf].sum()))
 
             if allow_break and i > 5:
-
                 e_sum = np.asarray(energy_sum)
                 tol = tolerance * (np.amax(e_sum) - np.amin(e_sum))
 
-                e_end = e_sum[e_sum.size - 5:]
+                e_end = e_sum[e_sum.size - 5 :]
                 test_dist = np.abs(np.amax(e_end) - np.amin(e_end))
 
                 if test_dist < tol:

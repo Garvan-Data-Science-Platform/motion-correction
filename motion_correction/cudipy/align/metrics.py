@@ -12,7 +12,7 @@ from cupyx.scipy import ndimage
 
 class SimilarityMetric(object, metaclass=abc.ABCMeta):
     def __init__(self, dim):
-        r""" Similarity Metric abstract class
+        r"""Similarity Metric abstract class
 
         A similarity metric is in charge of keeping track of the numerical
         value of the similarity (or distance) between the two given images. It
@@ -70,8 +70,9 @@ class SimilarityMetric(object, metaclass=abc.ABCMeta):
         """
         self.levels_above = levels
 
-    def set_static_image(self, static_image, static_affine, static_spacing,
-                         static_direction):
+    def set_static_image(
+        self, static_image, static_affine, static_spacing, static_direction
+    ):
         r"""Sets the static image being compared against the moving one.
 
         Sets the static image. The default behavior (of this abstract class) is
@@ -108,8 +109,9 @@ class SimilarityMetric(object, metaclass=abc.ABCMeta):
         """
         pass
 
-    def set_moving_image(self, moving_image, moving_affine, moving_spacing,
-                         moving_direction):
+    def set_moving_image(
+        self, moving_image, moving_affine, moving_spacing, moving_direction
+    ):
         r"""Sets the moving image being compared against the static one.
 
         Sets the moving image. The default behavior (of this abstract class) is
@@ -193,7 +195,6 @@ class SimilarityMetric(object, metaclass=abc.ABCMeta):
 
 
 class CCMetric(SimilarityMetric):
-
     def __init__(self, dim, sigma_diff=2.0, radius=4, coord_axis=-1):
         r"""Normalized Cross-Correlation Similarity metric.
 
@@ -241,17 +242,19 @@ class CCMetric(SimilarityMetric):
             min_size = self.radius * 2 + 1
             return any([size < min_size for size in image.shape])
 
-        msg = ("Each image dimension should be superior to 2 * radius + 1."
-               "Decrease CCMetric radius or increase your image size")
+        msg = (
+            "Each image dimension should be superior to 2 * radius + 1."
+            "Decrease CCMetric radius or increase your image size"
+        )
 
         if invalid_image_size(self.static_image):
             raise ValueError("Static image size is too small. " + msg)
         if invalid_image_size(self.moving_image):
             raise ValueError("Moving image size is too small. " + msg)
 
-        self.factors = self.precompute_factors(self.static_image,
-                                               self.moving_image,
-                                               self.radius)
+        self.factors = self.precompute_factors(
+            self.static_image, self.moving_image, self.radius
+        )
 
         if self.coord_axis == -1:
             self.gradient_moving = cp.empty(
@@ -276,9 +279,9 @@ class CCMetric(SimilarityMetric):
                 temp = self.moving_spacing.reshape((-1,) + (1,) * self.dim)
                 self.gradient_moving /= temp
         if self.moving_direction is not None:
-            self.reorient_vector_field(self.gradient_moving,
-                                       self.moving_direction,
-                                       coord_axis=self.coord_axis)
+            self.reorient_vector_field(
+                self.gradient_moving, self.moving_direction, coord_axis=self.coord_axis
+            )
 
         if self.coord_axis == -1:
             self.gradient_static = cp.empty(
@@ -302,13 +305,12 @@ class CCMetric(SimilarityMetric):
                 self.gradient_static /= temp
 
         if self.static_direction is not None:
-            self.reorient_vector_field(self.gradient_static,
-                                       self.static_direction,
-                                       coord_axis=self.coord_axis)
+            self.reorient_vector_field(
+                self.gradient_static, self.static_direction, coord_axis=self.coord_axis
+            )
 
     def free_iteration(self):
-        r"""Frees the resources allocated during initialization
-        """
+        r"""Frees the resources allocated during initialization"""
         del self.factors
         del self.gradient_moving
         del self.gradient_static
@@ -368,6 +370,7 @@ class CCMetric(SimilarityMetric):
         largest iteration
         """
         return self.energy
+
 
 # TODO:
 # unimplemented classes:  EMMetric, SSDMetric

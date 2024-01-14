@@ -7,4 +7,4 @@ from cupy import get_array_module
 # Currently requires https://github.com/seberg/numpy-dispatch
 # CuPy will have to implement the __array_module__ protocol for this to work
 
-__all__ = ['get_array_module']
+__all__ = ["get_array_module"]

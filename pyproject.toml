@@ -1,0 +1,43 @@
+[tool.poetry]
+name = "motion-correction"
+version = "0.1.24"
+description = "Motion correction algorithms for FLIM data."
+authors = ["Tim Kallady <t.kallady@garvan.org.au>"]
+license = "MIT license"
+readme = "README.rst"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pillow = ">=10.0.0"
+numba = ">=0.57"
+numba-progress = ">=1.1.0"
+opencv-python = ">=4.8"
+torch = ">=2.0.1"
+numpy = ">=1.23.5"
+matplotlib = "3.7.2"
+dipy = ">=1.7.0"
+tqdm = ">=4.66"
+scikit-image = "0.21"
+sparse = ">=0.14.0"
+astropy = "6.0.0"
+ipython = "8"
+
+[tool.poetry.extras]
+gpu = ["cupy-cuda11x"]
+
+[tool.poetry.group.dev.dependencies]
+pip = "19.2.3"
+bump2version = "0.5.11"
+wheel = "0.33.6"
+watchdog = "0.9.0"
+flake8 = "3.7.8"
+tox = "3.14.0"
+coverage = "4.5.4"
+Sphinx = "1.8.5"
+twine = "1.14.0"
+pytest = ">=7.4"
+Pillow = ">=10.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

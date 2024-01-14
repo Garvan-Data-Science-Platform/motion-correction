@@ -33,17 +33,15 @@ def _middlebury():
     ncol = col_range[-1]
     cmap = np.zeros((ncol, 3))
 
-    for idx, (i0, i1, l) in enumerate(zip(col_range[:-1],
-                                          col_range[1:],
-                                          col_len[1:])):
-        j0 = (idx//2) % 3
-        j1 = (j0+1) % 3
+    for idx, (i0, i1, l) in enumerate(zip(col_range[:-1], col_range[1:], col_len[1:])):
+        j0 = (idx // 2) % 3
+        j1 = (j0 + 1) % 3
         if idx & 1:
-            cmap[i0:i1, j0] = 1 - np.arange(l)/l
+            cmap[i0:i1, j0] = 1 - np.arange(l) / l
             cmap[i0:i1, j1] = 1
         else:
             cmap[i0:i1, j0] = 1
-            cmap[i0:i1, j1] = np.arange(l)/l
+            cmap[i0:i1, j1] = np.arange(l) / l
 
     return cmap
 
@@ -79,19 +77,18 @@ def flow_to_color(u, v, cmap=None, scale=True):
 
     """
 
-    flow = (u + 1j*v)
+    flow = u + 1j * v
     magnitude = np.absolute(flow)
-    angle = np.mod(-np.angle(flow), 2*np.pi)
+    angle = np.mod(-np.angle(flow), 2 * np.pi)
 
     # Normalize flow direction
-    angle /= (2*np.pi)
+    angle /= 2 * np.pi
 
     # Map the magnitude between 0 and 1
     magnitude -= magnitude.min()
     magnitude /= magnitude.max()
 
     if cmap is None:
-
         # Create the corresponding HSV image
         nl, nc = u.shape
         hsv = np.ones((nl, nc, 3))
@@ -136,8 +133,8 @@ def color_wheel(u=None, v=None, nr=50, ntheta=1025):
     """
     max_rad = 1
     if u is not None or v is not None:
-        max_rad = np.sqrt(u*u + v*v).max()
-    radius, angle = np.mgrid[:max_rad:nr*1j, 0:2*np.pi:ntheta*1j]
+        max_rad = np.sqrt(u * u + v * v).max()
+    radius, angle = np.mgrid[: max_rad : nr * 1j, 0 : 2 * np.pi : ntheta * 1j]
     return angle, radius
 
 
@@ -157,18 +154,18 @@ def get_tight_figsize(I):
 
     """
     nl, nc = I.shape[:2]
-    dpi = plt.rcParams['figure.dpi']
-    dimBound = max(plt.rcParams['figure.figsize'])
-    h = float(nl)/dpi
-    w = float(nc)/dpi
+    dpi = plt.rcParams["figure.dpi"]
+    dimBound = max(plt.rcParams["figure.figsize"])
+    h = float(nl) / dpi
+    w = float(nc) / dpi
     maxDim = max(h, w)
-    redFact = dimBound/maxDim
+    redFact = dimBound / maxDim
     h *= redFact
     w *= redFact
     return w, h
 
 
-def plot(u, v, ax=None, cmap='middlebury', scale=True, colorwheel=True):
+def plot(u, v, ax=None, cmap="middlebury", scale=True, colorwheel=True):
     """Plots the color coded vector field.
 
     Parameters
@@ -200,7 +197,7 @@ def plot(u, v, ax=None, cmap='middlebury', scale=True, colorwheel=True):
     if ax is None:
         nl, nc = u.shape
         figsize = get_tight_figsize(img)
-        plt.figure(figsize=figsize, facecolor=(1., 1., 1.))
+        plt.figure(figsize=figsize, facecolor=(1.0, 1.0, 1.0))
         ax = plt.axes([0, 0, 1, 1], frameon=False)
 
     ax.imshow(img)
@@ -208,15 +205,15 @@ def plot(u, v, ax=None, cmap='middlebury', scale=True, colorwheel=True):
 
     if colorwheel:
         if cmap is None:
-            cmap = 'hsv'
+            cmap = "hsv"
         bbox = ax.get_position()
         w, h = bbox.width, bbox.height
         X0, Y0 = bbox.x0, bbox.y0
 
-        x0, y0 = X0+0.01*w, Y0+0.79*h
+        x0, y0 = X0 + 0.01 * w, Y0 + 0.79 * h
 
         fig = ax.get_figure()
-        ax2 = fig.add_axes([x0, y0, w*0.2, h*0.2], polar=1)
+        ax2 = fig.add_axes([x0, y0, w * 0.2, h * 0.2], polar=1)
         angle, rad = color_wheel(u, v)
         ax2.pcolormesh(angle, rad, angle, cmap=cmap)
         ax2.set_xticks([])
@@ -224,8 +221,7 @@ def plot(u, v, ax=None, cmap='middlebury', scale=True, colorwheel=True):
     return ax
 
 
-def quiver(u, v, c=None, bg=None, ax=None, step=None, nvec=50, bg_cmap=None,
-           **kwargs):
+def quiver(u, v, c=None, bg=None, ax=None, step=None, nvec=50, bg_cmap=None, **kwargs):
     """Draws a quiver plot representing a dense vector field.
 
     Parameters
@@ -268,34 +264,36 @@ def quiver(u, v, c=None, bg=None, ax=None, step=None, nvec=50, bg_cmap=None,
 
     if ax is None:
         figsize = get_tight_figsize(u)
-        plt.figure(figsize=figsize, facecolor=(1., 1., 1.))
+        plt.figure(figsize=figsize, facecolor=(1.0, 1.0, 1.0))
         ax = plt.axes([0, 0, 1, 1], frameon=False)
         ax.set_axis_off()
 
     nl, nc = u.shape
 
     if step is None:
-        step = max(nl//nvec, nc//nvec)
+        step = max(nl // nvec, nc // nvec)
 
     y, x = np.mgrid[:nl:step, :nc:step]
     u_ = u[::step, ::step]
     v_ = v[::step, ::step]
-    idx = np.logical_and(np.logical_and(x+u_ >= 0, x+u_ <= nc-1),
-                         np.logical_and(y+v_ >= 0, y+v_ <= nl-1))
+    idx = np.logical_and(
+        np.logical_and(x + u_ >= 0, x + u_ <= nc - 1),
+        np.logical_and(y + v_ >= 0, y + v_ <= nl - 1),
+    )
 
     if bg is not None:
         ax.imshow(bg, cmap=bg_cmap)
     else:
         ax.axis([0, nc, nl, 0])
-        ax.set_aspect('equal')
+        ax.set_aspect("equal")
 
     args = [x[idx], y[idx], u_[idx], v_[idx]]
     if c is not None:
         args.append(c[::step, ::step][idx])
 
-    kwargs['units'] = 'dots'
-    kwargs['angles'] = 'xy'
-    kwargs['scale_units'] = 'xy'
+    kwargs["units"] = "dots"
+    kwargs["angles"] = "xy"
+    kwargs["scale_units"] = "xy"
 
     ax.quiver(*args, **kwargs)
     ax.set_axis_off()

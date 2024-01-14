@@ -4,7 +4,8 @@ From https://github.com/rfezzani/pyimof
 """
 
 import matplotlib.pyplot as plt
-#from . import data
+
+# from . import data
 from . import io
 from . import solvers
 from . import display
@@ -12,12 +13,16 @@ from . import display
 
 # Registration of the middlebury color map
 plt.cm.register_cmap(
-    'middlebury',
+    "middlebury",
     cmap=plt.cm.colors.LinearSegmentedColormap.from_list(
-        'middlebury', display._middlebury()).reversed())
+        "middlebury", display._middlebury()
+    ).reversed(),
+)
 
 # Registration of reversed version of the middlebury color map
 plt.cm.register_cmap(
-    'middlebury_r',
+    "middlebury_r",
     cmap=plt.cm.colors.LinearSegmentedColormap.from_list(
-        'middlebury_r', display._middlebury()))
+        "middlebury_r", display._middlebury()
+    ),
+)

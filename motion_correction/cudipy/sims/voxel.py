@@ -14,7 +14,7 @@ def _add_gaussian(sig, noise1, noise2):
     return sig + noise1
 
 
-@cp.fuse(kernel_name='_add_rician')
+@cp.fuse(kernel_name="_add_rician")
 def _add_rician_fused(sig, noise1, noise2):
     """
     Helper function to add_noise.
@@ -22,7 +22,7 @@ def _add_rician_fused(sig, noise1, noise2):
     This does the same as abs(sig + complex(noise1, noise2))
 
     """
-    tmp = (sig + noise1)
+    tmp = sig + noise1
     tmp *= tmp
     return cp.sqrt(tmp + noise2 * noise2)
 
@@ -34,7 +34,7 @@ def _add_rician_numpy(sig, noise1, noise2):
     This does the same as abs(sig + complex(noise1, noise2))
 
     """
-    tmp = (sig + noise1)
+    tmp = sig + noise1
     tmp *= tmp
     return np.sqrt(tmp + noise2 * noise2)
 
@@ -48,7 +48,7 @@ def _add_rician(sig, noise1, noise2):
         return _add_rician_numpy(sig, noise1, noise2)
 
 
-@cp.fuse(kernel_name='_add_rayleigh')
+@cp.fuse(kernel_name="_add_rayleigh")
 def _add_rayleigh_fused(sig, noise1, noise2):
     r"""Helper function to add_noise.
 
@@ -77,7 +77,7 @@ def _add_rayleigh(sig, noise1, noise2):
 
 
 def add_noise(signal, snr, S0, noise_type="rician"):
-    r""" Add noise of specified distribution to the signal from a single voxel.
+    r"""Add noise of specified distribution to the signal from a single voxel.
 
     Parameters
     -----------

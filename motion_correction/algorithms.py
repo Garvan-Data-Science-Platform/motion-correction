@@ -1,13 +1,9 @@
-
 import numpy as np
-import warnings
 
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration as morphic_cpu
 from dipy.align.metrics import CCMetric as ccmetric_cpu
-from image_registration.fft_tools import shift
-from image_registration import chi2_shift
+from .image_registration import chi2_shift
 from skimage.transform import warp
-from sys import platform
 from . import pyimof
 
 import torch
@@ -15,7 +11,7 @@ import cv2
 from numpy.typing import NDArray
 
 
-np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
+# np.warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
 
 
 class _CorrectionAlgorithm:
@@ -45,7 +41,7 @@ class Phase(_CorrectionAlgorithm):
     """
 
     def __init__(self):
-        self.algorithm_type = 'global'
+        self.algorithm_type = "global"
 
     def align(self, fixed_img, moving_img):
         """
@@ -63,32 +59,38 @@ class Phase(_CorrectionAlgorithm):
         and applies the translation to align the moving image with the fixed image.
         """
 
-        xoff, yoff = chi2_shift(fixed_img, moving_img, return_error=False,
-                                upsample_factor='auto')
+        xoff, yoff = chi2_shift(
+            fixed_img, moving_img, return_error=False, upsample_factor="auto"
+        )
         # xpad, ypad = int(np.ceil(np.abs(xoff))), int(np.ceil(np.abs(yoff)))
         # tst_frame_padded = np.pad(moving_img, ((ypad, ypad), (xpad, xpad)), mode='symmetric')
 
-    # aligned = shift.shiftnd(moving_img, (-yoff, -xoff))
-    # aligned = aligned[ypad//2:moving_img.shape[0]+ypad//2, xpad//2:moving_img.shape[1]+xpad//2]
+        # aligned = shift.shiftnd(moving_img, (-yoff, -xoff))
+        # aligned = aligned[ypad//2:moving_img.shape[0]+ypad//2, xpad//2:moving_img.shape[1]+xpad//2]
 
         transform = np.zeros((2, *fixed_img.shape), dtype=np.float32)
         transform[0, ...] = yoff
         transform[1, ...] = xoff
 
         row_coords, col_coords = np.meshgrid(
-            np.arange(moving_img.shape[0]), np.arange(moving_img.shape[1]), indexing='ij')
+            np.arange(moving_img.shape[0]),
+            np.arange(moving_img.shape[1]),
+            indexing="ij",
+        )
 
-        aligned = warp(moving_img,
-                       np.array([row_coords + transform[0], col_coords + transform[1]]),
-                       mode='symmetric', preserve_range=True)
+        aligned = warp(
+            moving_img,
+            np.array([row_coords + transform[0], col_coords + transform[1]]),
+            mode="symmetric",
+            preserve_range=True,
+        )
 
         return aligned, transform
 
 
 class OpticalILK(_CorrectionAlgorithm):
-
     def __init__(self):
-        self.algorithm_type = 'local'
+        self.algorithm_type = "local"
 
     def align(self, fixed_img, moving_img):
         """
@@ -103,17 +105,27 @@ class OpticalILK(_CorrectionAlgorithm):
 
         """
 
-        ref_img = (fixed_img - np.min(fixed_img)) / (np.max(fixed_img) - np.min(fixed_img))
-        tst_img = (moving_img - np.min(moving_img)) / (np.max(moving_img) - np.min(moving_img))
+        ref_img = (fixed_img - np.min(fixed_img)) / (
+            np.max(fixed_img) - np.min(fixed_img)
+        )
+        tst_img = (moving_img - np.min(moving_img)) / (
+            np.max(moving_img) - np.min(moving_img)
+        )
         ref_img = (ref_img * 255).astype(np.uint8)
         tst_img = (tst_img * 255).astype(np.uint8)
-        u, v = pyimof.solvers.ilk(ref_img, tst_img)  # optical_flow_ilk(ref_img, tst_img)
+        u, v = pyimof.solvers.ilk(
+            ref_img, tst_img
+        )  # optical_flow_ilk(ref_img, tst_img)
         row_coords, col_coords = np.meshgrid(
-            np.arange(tst_img.shape[0]), np.arange(tst_img.shape[1]), indexing='ij')
+            np.arange(tst_img.shape[0]), np.arange(tst_img.shape[1]), indexing="ij"
+        )
 
-        aligned = warp(moving_img,
-                       np.array([row_coords + v, col_coords + u]),
-                       mode='symmetric', preserve_range=True)
+        aligned = warp(
+            moving_img,
+            np.array([row_coords + v, col_coords + u]),
+            mode="symmetric",
+            preserve_range=True,
+        )
         transform = np.stack((v, u), axis=0)
         return aligned, transform
 
@@ -124,7 +136,7 @@ class OpticalTVL1(_CorrectionAlgorithm):
     """
 
     def __init__(self):
-        self.algorithm_type = 'local'
+        self.algorithm_type = "local"
 
     def align(self, fixed_img, moving_img):
         """
@@ -141,19 +153,29 @@ class OpticalTVL1(_CorrectionAlgorithm):
         and applies the estimated flow to align the moving image with the fixed image.
         """
 
-        ref_img = (fixed_img - np.min(fixed_img)) / (np.max(fixed_img) - np.min(fixed_img))
-        tst_img = (moving_img - np.min(moving_img)) / (np.max(moving_img) - np.min(moving_img))
+        ref_img = (fixed_img - np.min(fixed_img)) / (
+            np.max(fixed_img) - np.min(fixed_img)
+        )
+        tst_img = (moving_img - np.min(moving_img)) / (
+            np.max(moving_img) - np.min(moving_img)
+        )
         ref_img = (ref_img * 255).astype(np.uint8)
         tst_img = (tst_img * 255).astype(np.uint8)
 
-        u, v = pyimof.solvers.tvl1(ref_img, tst_img)  # optical_flow_tvl1(ref_img, tst_img)
+        u, v = pyimof.solvers.tvl1(
+            ref_img, tst_img
+        )  # optical_flow_tvl1(ref_img, tst_img)
 
         row_coords, col_coords = np.meshgrid(
-            np.arange(tst_img.shape[0]), np.arange(tst_img.shape[1]), indexing='ij')
+            np.arange(tst_img.shape[0]), np.arange(tst_img.shape[1]), indexing="ij"
+        )
 
-        aligned = warp(moving_img,
-                       np.array([row_coords + v, col_coords + u]),
-                       mode='symmetric', preserve_range=True)
+        aligned = warp(
+            moving_img,
+            np.array([row_coords + v, col_coords + u]),
+            mode="symmetric",
+            preserve_range=True,
+        )
         transform = np.stack((v, u), axis=0)
 
         return aligned, transform
@@ -165,7 +187,7 @@ class OpticalPoly(_CorrectionAlgorithm):
     """
 
     def __init__(self):
-        self.algorithm_type = 'local'
+        self.algorithm_type = "local"
 
     def align(self, fixed_img, moving_img):
         """
@@ -181,23 +203,40 @@ class OpticalPoly(_CorrectionAlgorithm):
         and applies the estimated flow to align the moving image with the fixed image.
         """
 
-        ref_img = (fixed_img - np.min(fixed_img)) / (np.max(fixed_img) - np.min(fixed_img))
-        tst_img = (moving_img - np.min(moving_img)) / (np.max(moving_img) - np.min(moving_img))
+        ref_img = (fixed_img - np.min(fixed_img)) / (
+            np.max(fixed_img) - np.min(fixed_img)
+        )
+        tst_img = (moving_img - np.min(moving_img)) / (
+            np.max(moving_img) - np.min(moving_img)
+        )
         ref_img = (ref_img * 255).astype(np.uint8)
         tst_img = (tst_img * 255).astype(np.uint8)
 
-        flow = cv2.calcOpticalFlowFarneback(ref_img, tst_img, None,
-                                            pyr_scale=0.5, levels=3, winsize=12,
-                                            iterations=3, poly_n=5, poly_sigma=1.2, flags=0)
+        flow = cv2.calcOpticalFlowFarneback(
+            ref_img,
+            tst_img,
+            None,
+            pyr_scale=0.5,
+            levels=3,
+            winsize=12,
+            iterations=3,
+            poly_n=5,
+            poly_sigma=1.2,
+            flags=0,
+        )
         u = flow[..., 0]
         v = flow[..., 1]
 
         row_coords, col_coords = np.meshgrid(
-            np.arange(tst_img.shape[0]), np.arange(tst_img.shape[1]), indexing='ij')
+            np.arange(tst_img.shape[0]), np.arange(tst_img.shape[1]), indexing="ij"
+        )
 
-        aligned = warp(moving_img,
-                       np.array([row_coords + v, col_coords + u]),
-                       mode='wrap', preserve_range=True)
+        aligned = warp(
+            moving_img,
+            np.array([row_coords + v, col_coords + u]),
+            mode="wrap",
+            preserve_range=True,
+        )
 
         transform = np.stack((v, u), axis=0)
 
@@ -214,7 +253,7 @@ class Morphic(_CorrectionAlgorithm):
     def __init__(self, sigma_diff: float = 20, radius=15):
         self.sigma_diff = sigma_diff
         self.radius = radius
-        self.algorithm_type = 'local'
+        self.algorithm_type = "local"
 
     def align(self, fixed_img, moving_img):
         """
@@ -233,7 +272,6 @@ class Morphic(_CorrectionAlgorithm):
             return self.align_morphic_cpu(fixed_img, moving_img)
 
     def align_morphic_cpu(self, fixed_img, moving_img):
-
         metric = ccmetric_cpu(2, sigma_diff=self.sigma_diff, radius=self.radius)
         level_iters = [10, 10, 5]
         sdr = morphic_cpu(metric, level_iters)
@@ -242,8 +280,9 @@ class Morphic(_CorrectionAlgorithm):
         return aligned, np.moveaxis(mapping.backward, [0, 1, 2], [1, 2, 0])
 
     def align_morphic_gpu(self, fixed_img, moving_img):
-
-        from .cudipy.align.imwarp import SymmetricDiffeomorphicRegistration as morphic_gpu
+        from .cudipy.align.imwarp import (
+            SymmetricDiffeomorphicRegistration as morphic_gpu,
+        )
         import cupy as cp
         from .cudipy.align.metrics import CCMetric as ccmetric_gpu
 
@@ -252,4 +291,6 @@ class Morphic(_CorrectionAlgorithm):
         sdr = morphic_gpu(metric, level_iters)
         mapping = sdr.optimize(cp.asarray(fixed_img), cp.asarray(moving_img))
         warped_moving = mapping.transform(cp.asarray(moving_img))
-        return cp.asnumpy(warped_moving), cp.asnumpy(cp.moveaxis(mapping.backward, [0, 1, 2], [1, 2, 0]))
+        return cp.asnumpy(warped_moving), cp.asnumpy(
+            cp.moveaxis(mapping.backward, [0, 1, 2], [1, 2, 0])
+        )

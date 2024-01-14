@@ -43,6 +43,7 @@
 
 """
 import functools
+
 # from warnings import warn
 
 import cupy as cp
@@ -57,6 +58,7 @@ import cupyx.scipy.ndimage as ndimage
 #     sample_domain_regular,
 # )
 from ..align import vector_fields as vf
+
 # from cudipy.align.imwarp import ScaleSpace, get_direction_and_spacings
 # from cudipy.align.scalespace import IsotropicScaleSpace
 # from dipy.core.interpolation import interpolate_scalar_2d, interpolate_scalar_3d
@@ -64,12 +66,12 @@ from ..align import vector_fields as vf
 from dipy.utils.deprecator import deprecated_params
 
 partial = functools.partial
-_interp_options = ['nearest', 'linear']
+_interp_options = ["nearest", "linear"]
 _transform_method = {}
-_transform_method[(2, 'nearest')] = partial(vf.transform_affine, order=0)
-_transform_method[(3, 'nearest')] = partial(vf.transform_affine, order=0)
-_transform_method[(2, 'linear')] = partial(vf.transform_affine, order=1)
-_transform_method[(3, 'linear')] = partial(vf.transform_affine, order=1)
+_transform_method[(2, "nearest")] = partial(vf.transform_affine, order=0)
+_transform_method[(3, "nearest")] = partial(vf.transform_affine, order=0)
+_transform_method[(2, "linear")] = partial(vf.transform_affine, order=1)
+_transform_method[(3, "linear")] = partial(vf.transform_affine, order=1)
 _number_dim_affine_matrix = 2
 
 
@@ -82,10 +84,15 @@ class AffineInvalidValuesError(Exception):
 
 
 class AffineMap(object):
-
-    def __init__(self, affine, domain_grid_shape=None, domain_grid2world=None,
-                 codomain_grid_shape=None, codomain_grid2world=None):
-        """ AffineMap
+    def __init__(
+        self,
+        affine,
+        domain_grid_shape=None,
+        domain_grid2world=None,
+        codomain_grid_shape=None,
+        codomain_grid2world=None,
+    ):
+        """AffineMap
 
         Implements an affine transformation whose domain is given by
         `domain_grid` and `domain_grid2world`, and whose co-domain is
@@ -181,35 +188,36 @@ class AffineMap(object):
         try:
             affine = np.array(affine)
         except Exception:
-            raise TypeError("Input must be type ndarray, or be convertible"
-                            " to one.")
+            raise TypeError("Input must be type ndarray, or be convertible" " to one.")
 
         if len(affine.shape) != _number_dim_affine_matrix:
-            raise AffineInversionError('Affine transform must be 2D')
+            raise AffineInversionError("Affine transform must be 2D")
 
         if not affine.shape[0] == affine.shape[1]:
-            raise AffineInversionError("Affine transform must be a square "
-                                       "matrix")
+            raise AffineInversionError("Affine transform must be a square " "matrix")
 
         if isinstance(affine, cp.ndarray):
             # keep the affine matrix on the host
             affine = cp.asnumpy(affine)
 
         if not np.all(np.isfinite(affine)):
-            raise AffineInvalidValuesError("Affine transform contains invalid"
-                                           " elements")
+            raise AffineInvalidValuesError(
+                "Affine transform contains invalid" " elements"
+            )
 
         # checking on proper augmentation
         # First n-1 columns in last row in matrix contain non-zeros
         if not np.all(affine[-1, :-1] == 0.0):
-            raise AffineInvalidValuesError("First {n_1} columns in last row"
-                                           " in matrix contain non-zeros!"
-                                           .format(n_1=affine.shape[0] - 1))
+            raise AffineInvalidValuesError(
+                "First {n_1} columns in last row"
+                " in matrix contain non-zeros!".format(n_1=affine.shape[0] - 1)
+            )
 
         # Last row, last column in matrix must be 1.0!
         if affine[-1, -1] != 1.0:
-            raise AffineInvalidValuesError("Last row, last column in matrix"
-                                           " is not 1.0!")
+            raise AffineInvalidValuesError(
+                "Last row, last column in matrix" " is not 1.0!"
+            )
 
         # making a copy to insulate it from changes outside object
         self.affine = affine.copy()
@@ -217,7 +225,7 @@ class AffineMap(object):
         try:
             self.affine_inv = linalg.inv(affine)
         except linalg.LinAlgError:
-            raise AffineInversionError('Affine cannot be inverted')
+            raise AffineInversionError("Affine cannot be inverted")
 
     def __str__(self):
         """Printable format - relies on ndarray's implementation."""
@@ -236,30 +244,43 @@ class AffineMap(object):
             return str(self.affine)
         elif isinstance(format_spec, str):
             format_spec = format_spec.lower()
-            if format_spec in ['', ' ', 'f', 'full']:
+            if format_spec in ["", " ", "f", "full"]:
                 return str(self.affine)
             # rotation part only (initial 3x3)
-            elif format_spec in ['r', 'rotation']:
+            elif format_spec in ["r", "rotation"]:
                 return str(self.affine[:-1, :-1])
             # translation part only (4th col)
-            elif format_spec in ['t', 'translation']:
+            elif format_spec in ["t", "translation"]:
                 # notice unusual indexing to make it a column vector
                 #   i.e. rows from 0 to n-1, cols from n to n
                 return str(self.affine[:-1, -1:])
             else:
-                allowed_formats_print_map = ['full', 'f',
-                                             'rotation', 'r',
-                                             'translation', 't']
-                raise NotImplementedError("Format {} not recognized or"
-                                          "implemented.\nTry one of {}"
-                                          .format(format_spec,
-                                                  allowed_formats_print_map))
+                allowed_formats_print_map = [
+                    "full",
+                    "f",
+                    "rotation",
+                    "r",
+                    "translation",
+                    "t",
+                ]
+                raise NotImplementedError(
+                    "Format {} not recognized or"
+                    "implemented.\nTry one of {}".format(
+                        format_spec, allowed_formats_print_map
+                    )
+                )
 
-    @deprecated_params('interp', 'interpolation', since='1.13', until='1.15')
-    def _apply_transform(self, image, interpolation='linear',
-                         image_grid2world=None, sampling_grid_shape=None,
-                         sampling_grid2world=None, resample_only=False,
-                         apply_inverse=False):
+    @deprecated_params("interp", "interpolation", since="1.13", until="1.15")
+    def _apply_transform(
+        self,
+        image,
+        interpolation="linear",
+        image_grid2world=None,
+        sampling_grid_shape=None,
+        sampling_grid2world=None,
+        resample_only=False,
+        apply_inverse=False,
+    ):
         """Transform the input image applying this affine transform.
 
         This is a generic function to transform images using either this
@@ -315,7 +336,7 @@ class AffineMap(object):
         """
         # Verify valid interpolation requested
         if interpolation not in _interp_options:
-            msg = 'Unknown interpolation method: %s' % (interpolation,)
+            msg = "Unknown interpolation method: %s" % (interpolation,)
             raise ValueError(msg)
 
         # Obtain sampling grid
@@ -325,7 +346,7 @@ class AffineMap(object):
             else:
                 sampling_grid_shape = self.domain_shape
         if sampling_grid_shape is None:
-            msg = 'Unknown sampling info. Provide a valid sampling_grid_shape'
+            msg = "Unknown sampling info. Provide a valid sampling_grid_shape"
             raise ValueError(msg)
 
         dim = len(sampling_grid_shape)
@@ -334,7 +355,7 @@ class AffineMap(object):
         # Verify valid image dimension
         img_dim = len(image.shape)
         if img_dim < 2 or img_dim > 3:
-            raise ValueError('Undefined transform for dim: %d' % (img_dim,))
+            raise ValueError("Undefined transform for dim: %d" % (img_dim,))
 
         # Obtain grid-to-world transform for sampling grid
         if sampling_grid2world is None:
@@ -372,17 +393,22 @@ class AffineMap(object):
         comp = cp.asarray(comp)
 
         # Transform the input image
-        if interpolation == 'linear':
+        if interpolation == "linear":
             image = image.astype(cp.promote_types(image.dtype, np.float32))
 
-        transformed = _transform_method[(dim, interpolation)](image, shape,
-                                                              comp)
+        transformed = _transform_method[(dim, interpolation)](image, shape, comp)
         return transformed
 
-    @deprecated_params('interp', 'interpolation', since='1.13', until='1.15')
-    def transform(self, image, interpolation='linear', image_grid2world=None,
-                  sampling_grid_shape=None, sampling_grid2world=None,
-                  resample_only=False):
+    @deprecated_params("interp", "interpolation", since="1.13", until="1.15")
+    def transform(
+        self,
+        image,
+        interpolation="linear",
+        image_grid2world=None,
+        sampling_grid_shape=None,
+        sampling_grid2world=None,
+        resample_only=False,
+    ):
         """Transform the input image from co-domain to domain space.
 
         By default, the transformed image is sampled at a grid defined by
@@ -422,18 +448,27 @@ class AffineMap(object):
             the transformed image, sampled at the requested grid
 
         """
-        transformed = self._apply_transform(image, interpolation,
-                                            image_grid2world,
-                                            sampling_grid_shape,
-                                            sampling_grid2world,
-                                            resample_only,
-                                            apply_inverse=False)
+        transformed = self._apply_transform(
+            image,
+            interpolation,
+            image_grid2world,
+            sampling_grid_shape,
+            sampling_grid2world,
+            resample_only,
+            apply_inverse=False,
+        )
         return transformed
 
-    @deprecated_params('interp', 'interpolation', since='1.13', until='1.15')
-    def transform_inverse(self, image, interpolation='linear',
-                          image_grid2world=None, sampling_grid_shape=None,
-                          sampling_grid2world=None, resample_only=False):
+    @deprecated_params("interp", "interpolation", since="1.13", until="1.15")
+    def transform_inverse(
+        self,
+        image,
+        interpolation="linear",
+        image_grid2world=None,
+        sampling_grid_shape=None,
+        sampling_grid2world=None,
+        resample_only=False,
+    ):
         """Transform the input image from domain to co-domain space.
 
         By default, the transformed image is sampled at a grid defined by
@@ -473,18 +508,20 @@ class AffineMap(object):
             the transformed image, sampled at the requested grid
 
         """
-        transformed = self._apply_transform(image, interpolation,
-                                            image_grid2world,
-                                            sampling_grid_shape,
-                                            sampling_grid2world,
-                                            resample_only,
-                                            apply_inverse=True)
+        transformed = self._apply_transform(
+            image,
+            interpolation,
+            image_grid2world,
+            sampling_grid_shape,
+            sampling_grid2world,
+            resample_only,
+            apply_inverse=True,
+        )
         return transformed
 
 
-def transform_centers_of_mass(static, static_grid2world,
-                              moving, moving_grid2world):
-    r""" Transformation to align the center of mass of the input images.
+def transform_centers_of_mass(static, static_grid2world, moving, moving_grid2world):
+    r"""Transformation to align the center of mass of the input images.
 
     Parameters
     ----------
@@ -516,15 +553,14 @@ def transform_centers_of_mass(static, static_grid2world,
     c_moving = moving_grid2world.dot(c_moving + (1,))
     transform = np.eye(dim + 1)
     transform[:dim, dim] = (c_moving - c_static)[:dim]
-    affine_map = AffineMap(transform,
-                           static.shape, static_grid2world,
-                           moving.shape, moving_grid2world)
+    affine_map = AffineMap(
+        transform, static.shape, static_grid2world, moving.shape, moving_grid2world
+    )
     return affine_map
 
 
-def transform_geometric_centers(static, static_grid2world,
-                                moving, moving_grid2world):
-    r""" Transformation to align the geometric center of the input images.
+def transform_geometric_centers(static, static_grid2world, moving, moving_grid2world):
+    r"""Transformation to align the geometric center of the input images.
 
     With "geometric center" of a volume we mean the physical coordinates of
     its central voxel
@@ -559,15 +595,14 @@ def transform_geometric_centers(static, static_grid2world,
     c_moving = moving_grid2world.dot(c_moving + (1,))
     transform = np.eye(dim + 1)
     transform[:dim, dim] = (c_moving - c_static)[:dim]
-    affine_map = AffineMap(transform,
-                           static.shape, static_grid2world,
-                           moving.shape, moving_grid2world)
+    affine_map = AffineMap(
+        transform, static.shape, static_grid2world, moving.shape, moving_grid2world
+    )
     return affine_map
 
 
-def transform_origins(static, static_grid2world,
-                      moving, moving_grid2world):
-    r""" Transformation to align the origins of the input images.
+def transform_origins(static, static_grid2world, moving, moving_grid2world):
+    r"""Transformation to align the origins of the input images.
 
     With "origin" of a volume we mean the physical coordinates of
     voxel (0,0,0)
@@ -600,9 +635,9 @@ def transform_origins(static, static_grid2world,
     c_moving = moving_grid2world[:dim, dim]
     transform = np.eye(dim + 1)
     transform[:dim, dim] = (c_moving - c_static)[:dim]
-    affine_map = AffineMap(transform,
-                           static.shape, static_grid2world,
-                           moving.shape, moving_grid2world)
+    affine_map = AffineMap(
+        transform, static.shape, static_grid2world, moving.shape, moving_grid2world
+    )
     return affine_map
 
 

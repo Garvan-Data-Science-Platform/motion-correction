@@ -107,9 +107,10 @@ ENV/
 
 
 working.py
-*.pt3
 Dockerfile
 
 save_dir
 working
 *.tmp
+
+poetry.lock

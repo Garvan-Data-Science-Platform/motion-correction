@@ -100,9 +100,7 @@ def estimate_sigma(arr, disable_background_masking=False, N=0):
         mask = arr[..., 0].astype(np.bool)
         # TODO: make upstream PR at dipy with this binary erosion bug fix
         # erode mask by the convolution kernel shape
-        mask = ndi.binary_erosion(
-            mask, structure=cp.ones(k.shape[:3], dtype=np.bool)
-        )
+        mask = ndi.binary_erosion(mask, structure=cp.ones(k.shape[:3], dtype=np.bool))
 
     # TODO: make upstream PR at dipy that avoids an explicit loop over slices
     conv_out = cp.empty(arr.shape, dtype=np.float64)
