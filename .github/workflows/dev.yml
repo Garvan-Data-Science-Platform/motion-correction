@@ -1,4 +1,4 @@
-name: Test
+name: Development Tests
 on:
   push:
     branches-ignore:
