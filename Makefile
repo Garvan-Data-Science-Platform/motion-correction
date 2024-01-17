@@ -53,7 +53,7 @@ lint/flake8: ## check style with flake8
 lint: lint/flake8 ## check style
 
 test: ## run tests quickly with the default Python
-	pytest
+	poetry run pytest tests/
 
 test-all: ## run tests on every Python version with tox
 	poetry run tox
@@ -74,15 +74,11 @@ docs: ## generate Sphinx HTML documentation, including API docs
 servedocs: docs ## compile the docs watching for changes
 	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
 
-release: dist ## package and upload a release
-	twine upload dist/*
-
-dist: clean ## builds source and wheel package
-	poetry build
-	ls -l dist
-
 install: clean ## install the package to the active Python's site-packages
 	poetry install
 
-increment: 
+hotfix:
 	poetry version patch
+
+version: 
+	poetry version minor

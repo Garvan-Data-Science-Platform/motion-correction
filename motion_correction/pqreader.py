@@ -17,6 +17,7 @@ import struct
 import time
 from collections import OrderedDict
 import numpy as np
+from numpy.typing import NDArray
 
 import matplotlib.pyplot as plt
 from numba_progress import ProgressBar
@@ -1672,7 +1673,7 @@ def plot_sequence_images(image_array):
 
 def load_ptfile(
     filename, is_raw=False, gcs=False, progress_cb=None, destination_file=None
-):
+) -> tuple[NDArray, dict]:
     """Load a .ptu or .ptu into a numpy array
 
     :param filename: Name of file to load

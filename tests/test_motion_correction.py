@@ -6,6 +6,7 @@ import pytest
 
 from motion_correction import motion_correction
 import numpy as np
+from numpy.typing import NDArray
 
 
 @pytest.fixture
@@ -26,7 +27,80 @@ def test_content(response):
     assert True
 
 
-def test_demo(response):
+def test_write_pt3():
+    from motion_correction import load_ptfile, write_pt3
+
+    stack, meta = load_ptfile("./tests/2_frames.pt3")
+    write_pt3(meta, stack, "./tests/test.pt3")
+    stack2, meta2 = load_ptfile("./tests/test.pt3")
+
+    for key in meta.keys():
+        try:
+            assert meta[key] == meta2[key]
+        except:
+            assert np.array_equal(meta[key], meta2[key])
+
+    assert np.array_equal(stack, stack2)
+
+
+def test_algorithms():
+    from motion_correction import (
+        load_ptfile,
+        get_aggregated_intensity_image,
+        get_intensity_stack,
+        calculate_correction,
+        apply_correction_flim,
+    )
+    from motion_correction.algorithms import (
+        OpticalILK,
+        OpticalTVL1,
+        OpticalPoly,
+        Morphic,
+        Phase,
+    )
+
+    stack, _ = load_ptfile("./tests/2_frames.pt3")
+    i_stack = get_intensity_stack(stack, 0)
+
+    alg1 = OpticalILK()
+    alg2 = OpticalTVL1()
+    alg3 = OpticalPoly()
+    alg4 = Morphic()
+    phase = Phase()
+
+    c1 = calculate_correction(i_stack, 0, alg1)
+    c2 = calculate_correction(i_stack, 0, alg2)
+    c3 = calculate_correction(i_stack, 0, alg3)
+    c4 = calculate_correction(i_stack, 0, alg4)
+    c5 = calculate_correction(i_stack, 0, global_algorithm=phase)
+    c6 = calculate_correction(i_stack, 0, alg1, phase)
+
+    c_stack_1 = apply_correction_flim(stack, c1["combined_transforms"])
+    c_stack_2 = apply_correction_flim(stack, c2["combined_transforms"])
+    c_stack_3 = apply_correction_flim(stack, c3["combined_transforms"])
+    c_stack_4 = apply_correction_flim(stack, c4["combined_transforms"])
+    c_stack_5 = apply_correction_flim(stack, c5["combined_transforms"])
+    c_stack_6 = apply_correction_flim(stack, c6["combined_transforms"])
+
+    agg_0 = get_aggregated_intensity_image(stack, 0)
+    agg_1 = get_aggregated_intensity_image(c_stack_1, 0)
+    agg_2 = get_aggregated_intensity_image(c_stack_2, 0)
+    agg_3 = get_aggregated_intensity_image(c_stack_3, 0)
+    agg_4 = get_aggregated_intensity_image(c_stack_4, 0)
+    agg_5 = get_aggregated_intensity_image(c_stack_5, 0)
+    agg_6 = get_aggregated_intensity_image(c_stack_6, 0)
+
+    assert agg_0.sum() != agg_1.sum()
+    assert agg_1.sum() != agg_2.sum()
+    assert agg_2.sum() != agg_3.sum()
+    assert agg_3.sum() != agg_4.sum()
+    assert agg_4.sum() != agg_5.sum()
+    assert agg_5.sum() != agg_6.sum()
+    assert agg_0.sum() != agg_1.sum()
+
+
+# Very basic test. No assertions, just checks demo code can run without errors
+def test_demo():
     # %%
     from motion_correction.desktop.flim_aligner import FlimAligner, SimMetric
 

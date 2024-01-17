@@ -10,8 +10,11 @@ motion_correction
         :target: https://motion-correction.readthedocs.io/en/latest/?version=latest
         :alt: Documentation Status
 
+.. image:: https://github.com/Garvan-Data-Science-Platform/motion-correction/actions/workflows/dev.yml/badge.svg?event=push
+   :target: https://github.com/Garvan-Data-Science-Platform/motion-correction/actions
 
-
+.. image:: https://github.com/Garvan-Data-Science-Platform/motion-correction/actions/workflows/main.yml/badge.svg?event=push
+   :target: https://github.com/Garvan-Data-Science-Platform/motion-correction/actions
 
 Motion correction algorithms for FLIM data.
 

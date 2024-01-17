@@ -1,4 +1,4 @@
-name: prod release
+name: Prod release
 on:
   release:
     types: [published]
@@ -6,9 +6,6 @@ on:
 permissions:
   contents: "read"
   id-token: "write"
-
-#Based on https://cloud.google.com/blog/products/identity-security/enabling-keyless-authentication-from-github-actions
-#and https://cloud.google.com/blog/products/devops-sre/using-github-actions-with-google-cloud-deploy
 
 jobs:
   test:
