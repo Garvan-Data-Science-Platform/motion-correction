@@ -90,13 +90,10 @@ def test_algorithms():
     agg_5 = get_aggregated_intensity_image(c_stack_5, 0)
     agg_6 = get_aggregated_intensity_image(c_stack_6, 0)
 
-    assert agg_0.sum() != agg_1.sum()
-    assert agg_1.sum() != agg_2.sum()
-    assert agg_2.sum() != agg_3.sum()
-    assert agg_3.sum() != agg_4.sum()
-    assert agg_4.sum() != agg_5.sum()
-    assert agg_5.sum() != agg_6.sum()
-    assert agg_0.sum() != agg_1.sum()
+    res_ls = [agg_0, agg_1, agg_2, agg_3, agg_4, agg_5, agg_6]
+    for i in range(len(res_ls)):
+        for j in range(i + 1, len(res_ls)):
+            assert not np.array_equal(res_ls[i], res_ls[j])
 
 
 # Very basic test. No assertions, just checks demo code can run without errors
