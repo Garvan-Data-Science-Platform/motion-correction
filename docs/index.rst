@@ -16,7 +16,7 @@ To install motion_correction, run this command in your terminal:
 .. code-block:: console
 
     $ pip install motion_correction
-    #Or for GPU Support (not supported on mac)
+    Or for GPU Support (not supported on mac)
     $ pip install motion_correction[gpu]
 
 This is the preferred method to install motion_correction, as it will always install the most recent stable release.
@@ -34,6 +34,7 @@ Some algorithms run faster with a GPU.
 `CUDA Toolkit 11.2 - 11.8 <https://developer.nvidia.com/cuda-11-8-0-download-archive>`_ must be installed to run on GPU.
 
 Alternatively,
+
 .. code-block:: console
 
     $ conda install -c "nvidia/label/cuda-11.8.0" cuda-toolkit`

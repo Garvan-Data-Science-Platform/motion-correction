@@ -1674,7 +1674,7 @@ def plot_sequence_images(image_array):
 def load_ptfile(
     filename, is_raw=False, gcs=False, progress_cb=None, destination_file=None
 ) -> tuple[NDArray, dict]:
-    """Load a .ptu or .ptu into a numpy array
+    """Load a .pt3 or .ptu into a numpy array
 
     :param filename: Name of file to load
     :param gcs: Whether file is from google cloud storage (changes the header)

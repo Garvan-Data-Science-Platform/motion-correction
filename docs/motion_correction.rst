@@ -8,6 +8,8 @@ Subpackages
    :maxdepth: 4
 
    motion_correction.desktop
+   motion_correction.image_registration
+   motion_correction.pyimof
 
 Submodules
 ----------
