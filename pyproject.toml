@@ -1,6 +1,10 @@
 [tool.poetry]
 name = "motion-correction"
+<<<<<<< HEAD
 version = "0.2.2"
+=======
+version = "0.3.0"
+>>>>>>> 308e06c (remove gcs arg, improve pqreader parsing)
 description = "Motion correction algorithms for FLIM data."
 authors = ["Tim Kallady <t.kallady@garvan.org.au>"]
 license = "MIT license"
