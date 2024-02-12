@@ -18,7 +18,7 @@ motion_correction
 
 Motion correction algorithms for FLIM data.
 
-* Free software: MIT license
+* Free software 😄: MIT license
 * Documentation: https://motion-correction.readthedocs.io.
 
 
