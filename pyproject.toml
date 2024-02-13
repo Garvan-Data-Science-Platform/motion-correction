@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "motion-correction"
-version = "0.2.0"
+version = "0.2.2"
 description = "Motion correction algorithms for FLIM data."
 authors = ["Tim Kallady <t.kallady@garvan.org.au>"]
 license = "MIT license"
