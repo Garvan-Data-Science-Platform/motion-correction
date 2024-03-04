@@ -67,7 +67,7 @@ _ptu_tag_type_r = {v: k for k, v in _ptu_tag_type.items()}
 _ptu_rec_type_r = {v: k for k, v in _ptu_rec_type.items()}
 
 
-def _load_ptu(filename, gcs=False, ovcfunc=None):
+def _load_ptu(filename, ovcfunc=None):
     """Load data from a PicoQuant .ptu file.
 
     Arguments:
@@ -89,7 +89,7 @@ def _load_ptu(filename, gcs=False, ovcfunc=None):
     """
     assert os.path.isfile(filename), "File '%s' not found." % filename
 
-    t3records, record_type, tags = _ptu_reader(filename, gcs=gcs)
+    t3records, record_type, tags = _ptu_reader(filename)
 
     if record_type == "rtPicoHarpT3":
         detectors, timestamps, nanotimes = _process_t3records(
@@ -225,7 +225,7 @@ def _load_ht3(filename, ovcfunc=None):
     return timestamps, detectors, nanotimes, meta
 
 
-def _load_pt3(filename, ovcfunc=None, gcs=False):
+def _load_pt3(filename, ovcfunc=None):
     """Load data from a PicoQuant .pt3 file.
 
     Arguments:
@@ -242,7 +242,7 @@ def _load_pt3(filename, ovcfunc=None, gcs=False):
     """
     assert os.path.isfile(filename), "File '%s' not found." % filename
 
-    t3records, timestamps_unit, nanotimes_unit, meta = _pt3_reader(filename, gcs)
+    t3records, timestamps_unit, nanotimes_unit, meta = _pt3_reader(filename)
     detectors, timestamps, nanotimes = _process_t3records(
         t3records,
         time_bit=16,
@@ -442,8 +442,9 @@ def _ht3_reader(filename):
         return t3records, timestamps_unit, nanotimes_unit, metadata
 
 
-def _pt3_reader(filename, gcs):
+def _pt3_reader(filename):
     """Load raw t3 records and metadata from a PT3 file."""
+
     with open(filename, "rb") as f:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Binary file header
@@ -476,9 +477,24 @@ def _pt3_reader(filename, gcs):
                 ("DispCountAxisTo", "int32"),
             ]
         )
-        if gcs:
-            for _ in range(4):
+        skip = 0
+        valid = False
+        for i in range(100):
+            f.seek(0)
+            for j in range(i):
                 f.readline()
+            header = np.fromfile(f, dtype=header_dtype, count=1)
+            if header["FormatVersion"][0] == b"2.0":
+                valid = True
+                break
+        skip = i
+        if not valid:
+            raise IOError("This file is not a valid PT3 file.")
+
+        f.seek(0)
+
+        for i in range(skip):
+            f.readline()
         header = np.fromfile(f, dtype=header_dtype, count=1)
 
         if header["FormatVersion"][0] != b"2.0":
@@ -579,26 +595,32 @@ def _pt3_reader(filename, gcs):
         return t3records, timestamps_unit, nanotimes_unit, metadata
 
 
-def _ptu_reader(filename, gcs=False):
+def _ptu_reader(filename):
     """Read the header and the raw t3 or t2 records from a PTU file."""
     # All the info about the PTU format has been inferred from PicoQuant demo:
     # https://github.com/PicoQuant/PicoQuant-Time-Tagged-File-Format-Demos/blob/master/PTU/C/ptudemo.cc
 
     # Load only the first few bytes to see is file is valid
+    skip = 0
     with open(filename, "rb") as f:
-        if gcs:
-            for _ in range(4):
+        valid = False
+        for i in range(100):
+            f.seek(0)
+            for j in range(i):
                 f.readline()
-        magic = f.read(8).rstrip(b"\0")
+            magic = f.read(8).rstrip(b"\0")
+            if magic == b"PQTTTR":
+                valid = True
+                break
         # version = f.read(8).rstrip(b"\0")
-    if magic != b"PQTTTR":
+        skip = i
+    if not valid:
         raise IOError("This file is not a valid PTU file. " "Magic: '%s'." % magic)
 
     # Now load the entire file
     with open(filename, "rb") as f:
-        if gcs:
-            for _ in range(4):
-                f.readline()
+        for j in range(skip):
+            f.readline()
         s = f.read()
     tags, offset = _read_header_tags(s)
 
@@ -1672,12 +1694,11 @@ def plot_sequence_images(image_array):
 
 
 def load_ptfile(
-    filename, is_raw=False, gcs=False, progress_cb=None, destination_file=None
+    filename, is_raw=False, progress_cb=None, destination_file=None
 ) -> tuple[NDArray, dict]:
     """Load a .pt3 or .ptu into a numpy array
 
     :param filename: Name of file to load
-    :param gcs: Whether file is from google cloud storage (changes the header)
     :param progress_cb: Callback function which is called with progress as a value between 0 and 1
     :param destination_file: file where resultant numpy array is saved
     :return flim_data_stack: numpyarray of size (num_pixel_Y, num_pixel_X, channels, num_of_frames, num_tcspc_channel)
@@ -1685,12 +1706,12 @@ def load_ptfile(
     """
     name, ext = os.path.splitext(filename)
     if ext == ".ptu":
-        sync, channel, tcspc, meta = _load_ptu(filename, gcs=gcs)
+        sync, channel, tcspc, meta = _load_ptu(filename)
         flim_data = _get_ptu_data_frame(
             sync, tcspc, channel, meta, is_raw, progress_cb, destination_file
         )
     elif ext == ".pt3":
-        sync, channel, tcspc, meta = _load_pt3(filename, gcs=gcs)
+        sync, channel, tcspc, meta = _load_pt3(filename)
         flim_data = _get_pt3_data_frame(
             sync, tcspc, channel, meta, is_raw, progress_cb, destination_file
         )
