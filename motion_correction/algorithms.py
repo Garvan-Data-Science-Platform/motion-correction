@@ -1,5 +1,4 @@
 import numpy as np
-
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration as morphic_cpu
 from dipy.align.metrics import CCMetric as ccmetric_cpu
 from .image_registration import chi2_shift
@@ -11,11 +10,7 @@ import cv2
 from numpy.typing import NDArray
 
 
-# np.warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
-
-
 class _CorrectionAlgorithm:
-
     """
     Base class for image correction algorithms.
     """
@@ -37,7 +32,7 @@ class _CorrectionAlgorithm:
 
 class Phase(_CorrectionAlgorithm):
     """
-    Aligns two images using phase correlation-based alignment.
+    Global Algorithm. Aligns two images using phase correlation-based alignment.
     """
 
     def __init__(self):
@@ -89,12 +84,15 @@ class Phase(_CorrectionAlgorithm):
 
 
 class OpticalILK(_CorrectionAlgorithm):
+    """
+    Local Algorithm. Aligns two images using the Iterative Lucas-Kanade (ILK) optical flow algorithm.
+    """
+
     def __init__(self):
         self.algorithm_type = "local"
 
     def align(self, fixed_img, moving_img):
         """
-        Aligns two images using the Iterative Lucas-Kanade (ILK) optical flow algorithm.
 
         :param fixed_img: (ndarray) The reference image.
         :param moving_img: (ndarray) The image to be aligned.
@@ -132,7 +130,7 @@ class OpticalILK(_CorrectionAlgorithm):
 
 class OpticalTVL1(_CorrectionAlgorithm):
     """
-    Aligns two images using the TV-L1 optical flow algorithm.
+    Local Algorithm. Aligns two images using the TV-L1 optical flow algorithm.
     """
 
     def __init__(self):
@@ -183,7 +181,7 @@ class OpticalTVL1(_CorrectionAlgorithm):
 
 class OpticalPoly(_CorrectionAlgorithm):
     """
-    Aligns two images using polynomial expansion-based optical flow.
+    Local Algorithm. Aligns two images using polynomial expansion-based optical flow.
     """
 
     def __init__(self):
@@ -245,7 +243,7 @@ class OpticalPoly(_CorrectionAlgorithm):
 
 class Morphic(_CorrectionAlgorithm):
     """
-    Aligns two images using MORPHIC image registration. Uses GPU if available
+    Local Algorithm. Aligns two images using MORPHIC image registration. Uses GPU if available
     :param sigma_diff: (float) The standard deviation for difference calculation (default: 20)
     :param radius: (int) The radius for the cross-correlation computation (default: 15).
     """

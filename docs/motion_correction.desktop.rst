@@ -1,6 +1,8 @@
 motion\_correction.desktop package
 ==================================
 
+Tools for using motion\_correction in an interactive desktop environment (refer to example jupyter notebook).
+
 Submodules
 ----------
 
