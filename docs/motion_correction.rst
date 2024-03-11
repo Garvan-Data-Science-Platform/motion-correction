@@ -8,14 +8,15 @@ Subpackages
    :maxdepth: 4
 
    motion_correction.desktop
-   motion_correction.image_registration
-   motion_correction.pyimof
 
 Submodules
 ----------
 
 motion\_correction.algorithms module
 ------------------------------------
+
+This includes all available algorithms that can be used with motion\_correction. 
+Algorithms must be initialised (some with parameters) before use, and are either local or global type algorithms.
 
 .. automodule:: motion_correction.algorithms
    :members:
@@ -33,6 +34,8 @@ motion\_correction.motion\_correction module
 motion\_correction.pqreader module
 ----------------------------------
 
+Functions for reading PicoQuant files as numpy arrays.
+
 .. automodule:: motion_correction.pqreader
    :members:
    :undoc-members:
@@ -40,6 +43,8 @@ motion\_correction.pqreader module
 
 motion\_correction.pqwriter module
 ----------------------------------
+
+Functions for writing numpy arrays to PicoQuant files.
 
 .. automodule:: motion_correction.pqwriter
    :members:
